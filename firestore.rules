@@ -1,0 +1,547 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isConfiguredAdminEmail() {
+      return isSignedIn()
+        && request.auth.token.email != null
+        && request.auth.token.email in ['buriniousie@gmail.com'];
+    }
+
+    function isAdmin() {
+      return isConfiguredAdminEmail()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function canModerate() {
+      return isAdmin()
+        || (
+          isSignedIn()
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'moderator']
+        );
+    }
+
+    function hasOnlyKeys(data, keys) {
+      return data.keys().hasOnly(keys);
+    }
+
+    function hasAllKeys(data, keys) {
+      return data.keys().hasAll(keys);
+    }
+
+    function deliveredMap(data) {
+      return data.deliveredAt == null ? {} : data.deliveredAt;
+    }
+
+    function readMap(data) {
+      return data.readAt == null ? {} : data.readAt;
+    }
+
+    function postShareCount(data) {
+      return data.shareCount == null ? 0 : data.shareCount;
+    }
+
+    function postLikes(data) {
+      return data.likes == null ? [] : data.likes;
+    }
+
+    function postComments(data) {
+      return data.comments == null ? [] : data.comments;
+    }
+
+    function isDeletedEmail(email) {
+      return exists(/databases/$(database)/documents/deletedAccounts/$(email));
+    }
+
+    function isGroupMember(groupId) {
+      return isSignedIn()
+        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.members;
+    }
+
+    function isDirectParticipant(chatId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/messages/$(chatId))
+        && request.auth.uid in get(/databases/$(database)/documents/messages/$(chatId)).data.participants;
+    }
+
+    function isAllowedProfileCreate(userId) {
+      return hasOnlyKeys(
+          request.resource.data,
+          [
+            'name',
+            'displayName',
+            'fullName',
+            'email',
+            'department',
+            'level',
+            'avatarUrl',
+            'residence',
+            'statusText',
+            'about',
+            'role',
+            'showDepartment',
+            'showLevel',
+            'blockedUserIds',
+            'onboardingSkippedAt',
+            'isDemoAccount',
+            'accountDeleted',
+            'deletedAt',
+            'createdAt',
+          ],
+        )
+        && hasAllKeys(
+          request.resource.data,
+          ['name', 'email', 'role', 'showDepartment', 'showLevel', 'createdAt'],
+        )
+        && isOwner(userId)
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == (isConfiguredAdminEmail() ? 'admin' : 'member')
+        && (
+          !('isDemoAccount' in request.resource.data)
+          || (
+            request.resource.data.isDemoAccount == true
+            && request.resource.data.email.matches('^demo[0-9][0-9]@vasiq\\.app$')
+          )
+        )
+        && !isDeletedEmail(request.resource.data.email);
+    }
+
+    function isAllowedSelfProfileUpdate() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return changedKeys.hasOnly(
+          [
+            'name',
+            'fullName',
+            'displayName',
+            'department',
+            'level',
+            'avatarUrl',
+            'residence',
+            'statusText',
+            'about',
+            'showDepartment',
+            'showLevel',
+            'blockedUserIds',
+            'onboardingSkippedAt',
+            'isDemoAccount',
+            'accountDeleted',
+            'deletedAt',
+            'role',
+          ],
+        )
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt
+        && (
+          request.resource.data.role == resource.data.role
+          || (isConfiguredAdminEmail() && request.resource.data.role == 'admin')
+        );
+    }
+
+    function isAllowedAdminProfileWrite() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return changedKeys.hasOnly(
+          [
+            'name',
+            'fullName',
+            'displayName',
+            'department',
+            'level',
+            'avatarUrl',
+            'residence',
+            'statusText',
+            'about',
+            'showDepartment',
+            'showLevel',
+            'blockedUserIds',
+            'onboardingSkippedAt',
+            'isDemoAccount',
+            'accountDeleted',
+            'deletedAt',
+            'role',
+          ],
+        )
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isAllowedDeletedAccountCreate(emailKey) {
+      return isSignedIn()
+        && request.auth.token.email == emailKey
+        && hasOnlyKeys(request.resource.data, ['email', 'userId', 'deletedAt'])
+        && hasAllKeys(request.resource.data, ['email', 'userId', 'deletedAt'])
+        && request.resource.data.email == emailKey
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    function isAllowedReportCreate() {
+      return hasOnlyKeys(
+          request.resource.data,
+          [
+            'reporterId',
+            'reporterName',
+            'targetType',
+            'targetId',
+            'targetOwnerId',
+            'targetLabel',
+            'reason',
+            'details',
+            'status',
+            'createdAt',
+          ],
+        )
+        && hasAllKeys(
+          request.resource.data,
+          ['reporterId', 'targetType', 'targetId', 'targetLabel', 'reason', 'details', 'status', 'createdAt'],
+        )
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.targetType in ['post', 'comment', 'reply', 'group', 'user']
+        && request.resource.data.status == 'pending';
+    }
+
+    function isAllowedReportReview() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return canModerate()
+        && changedKeys.hasOnly(['status', 'reviewedAt', 'reviewerId', 'reviewerEmail', 'moderatorNote'])
+        && request.resource.data.status in ['pending', 'reviewed', 'dismissed', 'actioned']
+        && request.resource.data.reviewerId == request.auth.uid
+        && request.resource.data.reviewerEmail == request.auth.token.email
+        && request.resource.data.reporterId == resource.data.reporterId
+        && request.resource.data.targetType == resource.data.targetType
+        && request.resource.data.targetId == resource.data.targetId
+        && request.resource.data.targetOwnerId == resource.data.targetOwnerId
+        && request.resource.data.targetLabel == resource.data.targetLabel
+        && request.resource.data.reason == resource.data.reason
+        && request.resource.data.details == resource.data.details
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isPredefinedGroupId(groupId) {
+      return groupId in [
+        'csc-100l',
+        'csc-200l',
+        'vasiq-tech',
+        'final-year',
+        'campus-media',
+        'hostel-gist',
+        'career-lab',
+        'study-circle',
+        'faith-and-life',
+      ];
+    }
+
+    function isValidPredefinedGroup(groupId, data) {
+      return hasOnlyKeys(data, ['name', 'description', 'members', 'createdAt'])
+        && hasAllKeys(data, ['name', 'description', 'members', 'createdAt'])
+        && data.members.size() == 0
+        && (
+          (groupId == 'csc-100l'
+            && data.name == 'CSC 100L'
+            && data.description == 'Freshers in Computer Science sharing updates, classes, and resources.')
+          || (groupId == 'csc-200l'
+            && data.name == 'CSC 200L'
+            && data.description == 'Second-year computer science students sharing class updates and resources.')
+          || (groupId == 'vasiq-tech'
+            && data.name == 'VASIQ Tech'
+            && data.description == 'A practical tech community for builders, designers, and campus innovators.')
+          || (groupId == 'final-year'
+            && data.name == 'Final Year'
+            && data.description == 'For project talks, deadlines, internship leads, and survival tips.')
+          || (groupId == 'campus-media'
+            && data.name == 'Campus Media'
+            && data.description == 'For photographers, media teams, social coverage, and visual storytelling.')
+          || (groupId == 'hostel-gist'
+            && data.name == 'Hostel Gist'
+            && data.description == 'Room updates, hostel notices, and everyday student gist.')
+          || (groupId == 'career-lab'
+            && data.name == 'Career Lab'
+            && data.description == 'Internships, CV reviews, portfolio feedback, and career growth conversations.')
+          || (groupId == 'study-circle'
+            && data.name == 'Study Circle'
+            && data.description == 'Revision groups, note sharing, and last-minute academic rescue.')
+          || (groupId == 'faith-and-life'
+            && data.name == 'Faith and Life'
+            && data.description == 'Fellowship updates, encouragement, and student life reflections.')
+        );
+    }
+
+    function isAllowedGroupMembershipUpdate() {
+      let currentMembers = resource.data.members;
+      let nextMembers = request.resource.data.members;
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+        && (
+          (
+            request.auth.uid in currentMembers
+            && !(request.auth.uid in nextMembers)
+            && nextMembers.size() == currentMembers.size() - 1
+          )
+          || (
+            !(request.auth.uid in currentMembers)
+            && request.auth.uid in nextMembers
+            && nextMembers.size() == currentMembers.size() + 1
+          )
+        );
+    }
+
+    function isAllowedGroupOwnerMembershipUpdate() {
+      let currentMembers = resource.data.members;
+      let nextMembers = request.resource.data.members;
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+        && resource.data.createdBy == request.auth.uid
+        && request.auth.uid in nextMembers
+        && nextMembers.size() == currentMembers.size() - 1
+        && currentMembers.hasAll(nextMembers);
+    }
+
+    function isAllowedGroupMessageCreate() {
+      return hasOnlyKeys(
+          request.resource.data,
+          ['senderId', 'senderName', 'text', 'clientMessageId', 'createdAt'],
+        )
+        && hasAllKeys(
+          request.resource.data,
+          ['senderId', 'senderName', 'text', 'createdAt'],
+        )
+        && request.resource.data.senderId == request.auth.uid;
+    }
+
+    function isAllowedGroupRequestCreate() {
+      return hasOnlyKeys(
+          request.resource.data,
+          ['name', 'description', 'requesterId', 'requesterName', 'requesterEmail', 'status', 'createdAt'],
+        )
+        && hasAllKeys(
+          request.resource.data,
+          ['name', 'description', 'requesterId', 'requesterName', 'requesterEmail', 'status', 'createdAt'],
+        )
+        && request.resource.data.requesterId == request.auth.uid
+        && request.resource.data.requesterEmail == request.auth.token.email
+        && request.resource.data.status == 'pending';
+    }
+
+    function isAllowedGroupRequestReview() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return canModerate()
+        && resource.data.status == 'pending'
+        && request.resource.data.requesterId == resource.data.requesterId
+        && request.resource.data.requesterEmail == resource.data.requesterEmail
+        && request.resource.data.name == resource.data.name
+        && request.resource.data.description == resource.data.description
+        && changedKeys.hasOnly(['status', 'reviewedAt', 'reviewerId', 'reviewerEmail', 'approvedGroupId'])
+        && request.resource.data.status in ['approved', 'declined']
+        && request.resource.data.reviewerId == request.auth.uid
+        && request.resource.data.reviewerEmail == request.auth.token.email;
+    }
+
+    function isAllowedChatCreate() {
+      return hasOnlyKeys(
+          request.resource.data,
+          ['participants', 'updatedAt', 'lastMessage', 'lastMessageSenderId'],
+        )
+        && hasAllKeys(
+          request.resource.data,
+          ['participants', 'updatedAt', 'lastMessage', 'lastMessageSenderId'],
+        )
+        && request.resource.data.participants.size() == 2
+        && request.resource.data.participants[0] != request.resource.data.participants[1]
+        && request.auth.uid in request.resource.data.participants
+        && request.resource.data.lastMessageSenderId == request.auth.uid;
+    }
+
+    function isAllowedLatestMessageUpdate() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return changedKeys.hasOnly(['participants', 'updatedAt', 'lastMessage', 'lastMessageSenderId'])
+        && request.resource.data.participants == resource.data.participants
+        && request.resource.data.lastMessageSenderId == request.auth.uid
+        && deliveredMap(request.resource.data) == deliveredMap(resource.data)
+        && readMap(request.resource.data) == readMap(resource.data);
+    }
+
+    function isAllowedReceiptUpdate() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      let nextDelivered = deliveredMap(request.resource.data);
+      let currentDelivered = deliveredMap(resource.data);
+      let nextRead = readMap(request.resource.data);
+      let currentRead = readMap(resource.data);
+      return changedKeys.hasOnly(['deliveredAt', 'readAt'])
+        && request.resource.data.participants == resource.data.participants
+        && request.resource.data.lastMessage == resource.data.lastMessage
+        && request.resource.data.lastMessageSenderId == resource.data.lastMessageSenderId
+        && nextDelivered.diff(currentDelivered).affectedKeys().hasOnly([request.auth.uid])
+        && nextRead.diff(currentRead).affectedKeys().hasOnly([request.auth.uid]);
+    }
+
+    function isAllowedDirectMessageCreate(chatId) {
+      return isDirectParticipant(chatId)
+        && hasOnlyKeys(
+          request.resource.data,
+          ['senderId', 'senderName', 'text', 'clientMessageId', 'createdAt'],
+        )
+        && hasAllKeys(
+          request.resource.data,
+          ['senderId', 'senderName', 'text', 'createdAt'],
+        )
+        && request.resource.data.senderId == request.auth.uid;
+    }
+
+    function isAllowedPostCreate() {
+      return hasAllKeys(
+          request.resource.data,
+          [
+            'userId',
+            'authorName',
+            'authorDepartment',
+            'authorAvatar',
+            'content',
+            'imageUrl',
+            'likes',
+            'comments',
+            'createdAt',
+          ],
+        )
+        && hasOnlyKeys(
+          request.resource.data,
+          [
+            'userId',
+            'authorName',
+            'authorDepartment',
+            'authorAvatar',
+            'content',
+            'imageUrl',
+            'mediaType',
+            'clientPostId',
+            'likes',
+            'comments',
+            'shareCount',
+            'createdAt',
+          ],
+        )
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.likes.size() == 0
+        && request.resource.data.comments.size() == 0;
+    }
+
+    function isAllowedPostLikeUpdate() {
+      let nextLikes = postLikes(request.resource.data);
+      let currentLikes = postLikes(resource.data);
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return isSignedIn()
+        && changedKeys.hasOnly(['likes'])
+        && (
+          (
+            request.auth.uid in currentLikes
+            && !(request.auth.uid in nextLikes)
+            && nextLikes.size() == currentLikes.size() - 1
+            && currentLikes.hasAll(nextLikes)
+          )
+          || (
+            !(request.auth.uid in currentLikes)
+            && request.auth.uid in nextLikes
+            && nextLikes.size() == currentLikes.size() + 1
+            && nextLikes.hasAll(currentLikes)
+          )
+        );
+    }
+
+    function isAllowedPostCommentUpdate() {
+      let nextComments = postComments(request.resource.data);
+      let currentComments = postComments(resource.data);
+      let nextComment = nextComments[nextComments.size() - 1];
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return isSignedIn()
+        && changedKeys.hasOnly(['comments'])
+        && (
+          (
+            nextComments.size() == currentComments.size() + 1
+            && nextComments.hasAll(currentComments)
+            && nextComment.userId == request.auth.uid
+            && hasOnlyKeys(nextComment, ['id', 'userId', 'userName', 'text', 'likes', 'replies', 'createdAt'])
+            && hasAllKeys(nextComment, ['id', 'userId', 'userName', 'text', 'likes', 'replies', 'createdAt'])
+            && nextComment.likes.size() == 0
+            && nextComment.replies.size() == 0
+          )
+          || nextComments.size() == currentComments.size()
+        );
+    }
+
+    function isAllowedPostShareUpdate() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return isSignedIn()
+        && changedKeys.hasOnly(['shareCount'])
+        && postShareCount(request.resource.data) == postShareCount(resource.data) + 1;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isAllowedProfileCreate(userId) || isAdmin();
+      allow update: if (isOwner(userId) && isAllowedSelfProfileUpdate()) || (isAdmin() && isAllowedAdminProfileWrite());
+      allow delete: if false;
+    }
+
+    match /deletedAccounts/{emailKey} {
+      allow read: if canModerate() || (isSignedIn() && request.auth.token.email == emailKey);
+      allow create: if isAllowedDeletedAccountCreate(emailKey);
+      allow update, delete: if false;
+    }
+
+    match /groups/{groupId} {
+      allow read: if isSignedIn();
+      allow create: if canModerate() || (isSignedIn() && isPredefinedGroupId(groupId) && isValidPredefinedGroup(groupId, request.resource.data));
+      allow update: if canModerate() || (isSignedIn() && (isAllowedGroupMembershipUpdate() || isAllowedGroupOwnerMembershipUpdate()));
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isAdmin() || isGroupMember(groupId);
+        allow create: if isAdmin() || (isGroupMember(groupId) && isAllowedGroupMessageCreate());
+        allow update, delete: if false;
+      }
+    }
+
+    match /groupRequests/{requestId} {
+      allow read: if canModerate() || (isSignedIn() && resource.data.requesterId == request.auth.uid);
+      allow create: if isSignedIn() && isAllowedGroupRequestCreate();
+      allow update: if isAllowedGroupRequestReview();
+      allow delete: if false;
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if canModerate();
+    }
+
+    match /reports/{reportId} {
+      allow read: if canModerate() || (isSignedIn() && resource.data.reporterId == request.auth.uid);
+      allow create: if isSignedIn() && isAllowedReportCreate();
+      allow update: if isAllowedReportReview();
+      allow delete: if false;
+    }
+
+    match /messages/{chatId} {
+      allow read: if isAdmin() || isDirectParticipant(chatId);
+      allow create: if isAdmin() || isAllowedChatCreate();
+      allow update: if isAdmin() || (isDirectParticipant(chatId) && (isAllowedLatestMessageUpdate() || isAllowedReceiptUpdate()));
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isAdmin() || isDirectParticipant(chatId);
+        allow create: if isAdmin() || isAllowedDirectMessageCreate(chatId);
+        allow update, delete: if false;
+      }
+    }
+
+    match /posts/{postId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin() || isAllowedPostCreate();
+      allow update: if isAdmin() || isAllowedPostLikeUpdate() || isAllowedPostCommentUpdate() || isAllowedPostShareUpdate();
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+  }
+}
