@@ -59,6 +59,31 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const password = 'VasiqDemo#2026';
 
+function getNumberFlag(name, fallbackValue) {
+  const flag = process.argv.find((argument) => argument.startsWith(`--${name}=`));
+  if (!flag) return fallbackValue;
+
+  const value = Number(flag.split('=')[1]);
+  return Number.isFinite(value) ? value : fallbackValue;
+}
+
+const options = {
+  accountsOnly: process.argv.includes('--accounts-only'),
+  delayMs: Math.max(0, getNumberFlag('delay', 1200)),
+  from: Math.max(1, getNumberFlag('from', 1)),
+  to: getNumberFlag('to', 20),
+};
+
+function pause(timeoutMs) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, timeoutMs);
+  });
+}
+
+function logStep(message) {
+  console.log(`[launch-seed] ${message}`);
+}
+
 const demoUsers = [
   ['demo01@vasiq.app', 'Adebayo Akinyemi', 'Computer Science', '300L'],
   ['demo02@vasiq.app', 'Mariam Ogunleye', 'Software Engineering', '200L'],
@@ -96,6 +121,11 @@ const demoUsers = [
   ][index % 4],
 }));
 
+const selectedUsers = demoUsers.filter((_, index) => {
+  const userNumber = index + 1;
+  return userNumber >= options.from && userNumber <= options.to;
+});
+
 const groups = [
   ['csc-100l', 'CSC 100L', 'Freshers in Computer Science sharing updates, classes, and resources.'],
   ['csc-200l', 'CSC 200L', 'Second-year computer science students sharing class updates and resources.'],
@@ -125,6 +155,7 @@ const postTemplates = [
 
 async function ensureUser(user) {
   await signOut(auth).catch(() => {});
+  logStep(`Ensuring ${user.email}`);
 
   try {
     const credential = await createUserWithEmailAndPassword(auth, user.email, password);
@@ -159,6 +190,7 @@ async function ensureUser(user) {
 
   if (profileSnapshot.exists()) {
     await updateDoc(profileRef, profileData);
+    await signOut(auth).catch(() => {});
     return;
   }
 
@@ -372,8 +404,23 @@ async function seedGroupRequests() {
 }
 
 async function main() {
-  for (const user of demoUsers) {
+  logStep(
+    `Starting ${options.accountsOnly ? 'account-only' : 'full'} seed for demo${String(options.from).padStart(2, '0')} to demo${String(options.to).padStart(2, '0')}.`,
+  );
+
+  for (const user of selectedUsers) {
     await ensureUser(user);
+    if (options.delayMs) {
+      await pause(options.delayMs);
+    }
+  }
+
+  if (options.accountsOnly) {
+    logStep('Selected demo accounts ensured.');
+    console.table(selectedUsers.map((user) => ({ email: user.email, password, name: user.name })));
+    await signOut(auth).catch(() => {});
+    await deleteApp(app).catch(() => {});
+    process.exit(0);
   }
 
   for (const group of groups) {
