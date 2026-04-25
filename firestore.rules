@@ -58,6 +58,18 @@ service cloud.firestore {
       return data.comments == null ? [] : data.comments;
     }
 
+    function postCommentsCount(data) {
+      return data.commentsCount == null ? 0 : data.commentsCount;
+    }
+
+    function commentLikes(data) {
+      return data.likes == null ? [] : data.likes;
+    }
+
+    function commentRepliesCount(data) {
+      return data.repliesCount == null ? 0 : data.repliesCount;
+    }
+
     function isDeletedEmail(email) {
       return exists(/databases/$(database)/documents/deletedAccounts/$(email));
     }
@@ -404,6 +416,7 @@ service cloud.firestore {
             'imageUrl',
             'likes',
             'comments',
+            'commentsCount',
             'createdAt',
           ],
         )
@@ -413,20 +426,26 @@ service cloud.firestore {
             'userId',
             'authorName',
             'authorDepartment',
+            'authorLevel',
             'authorAvatar',
+            'authorResidence',
             'content',
             'imageUrl',
             'mediaType',
             'clientPostId',
+            'category',
+            'signalLevel',
             'likes',
             'comments',
+            'commentsCount',
             'shareCount',
             'createdAt',
           ],
         )
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.likes.size() == 0
-        && request.resource.data.comments.size() == 0;
+        && request.resource.data.comments.size() == 0
+        && request.resource.data.commentsCount == 0;
     }
 
     function isAllowedPostLikeUpdate() {
@@ -479,6 +498,97 @@ service cloud.firestore {
         && postShareCount(request.resource.data) == postShareCount(resource.data) + 1;
     }
 
+    function isAllowedPostCommentCountUpdate() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return isSignedIn()
+        && changedKeys.hasOnly(['commentsCount'])
+        && postCommentsCount(request.resource.data) == postCommentsCount(resource.data) + 1;
+    }
+
+    function isAllowedStoryCreate() {
+      return isSignedIn()
+        && hasOnlyKeys(
+          request.resource.data,
+          [
+            'authorId',
+            'authorName',
+            'authorAvatar',
+            'authorDepartment',
+            'authorLevel',
+            'text',
+            'mediaUrl',
+            'mediaType',
+            'viewCount',
+            'createdAt',
+            'expiresAt',
+          ],
+        )
+        && hasAllKeys(
+          request.resource.data,
+          ['authorId', 'authorName', 'text', 'mediaUrl', 'mediaType', 'viewCount', 'createdAt', 'expiresAt'],
+        )
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.viewCount == 0;
+    }
+
+    function isAllowedCommentCreate() {
+      return isSignedIn()
+        && hasOnlyKeys(
+          request.resource.data,
+          ['userId', 'userName', 'text', 'likes', 'repliesCount', 'createdAt'],
+        )
+        && hasAllKeys(
+          request.resource.data,
+          ['userId', 'userName', 'text', 'likes', 'repliesCount', 'createdAt'],
+        )
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.likes.size() == 0
+        && request.resource.data.repliesCount == 0;
+    }
+
+    function isAllowedCommentLikeUpdate() {
+      let nextLikes = commentLikes(request.resource.data);
+      let currentLikes = commentLikes(resource.data);
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return isSignedIn()
+        && changedKeys.hasOnly(['likes'])
+        && (
+          (
+            request.auth.uid in currentLikes
+            && !(request.auth.uid in nextLikes)
+            && nextLikes.size() == currentLikes.size() - 1
+            && currentLikes.hasAll(nextLikes)
+          )
+          || (
+            !(request.auth.uid in currentLikes)
+            && request.auth.uid in nextLikes
+            && nextLikes.size() == currentLikes.size() + 1
+            && nextLikes.hasAll(currentLikes)
+          )
+        );
+    }
+
+    function isAllowedCommentReplyCountUpdate() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return isSignedIn()
+        && changedKeys.hasOnly(['repliesCount'])
+        && commentRepliesCount(request.resource.data) == commentRepliesCount(resource.data) + 1;
+    }
+
+    function isAllowedReplyCreate() {
+      return isSignedIn()
+        && hasOnlyKeys(
+          request.resource.data,
+          ['userId', 'userName', 'text', 'parentReplyId', 'parentReplyName', 'likes', 'createdAt'],
+        )
+        && hasAllKeys(
+          request.resource.data,
+          ['userId', 'userName', 'text', 'parentReplyId', 'parentReplyName', 'likes', 'createdAt'],
+        )
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.likes.size() == 0;
+    }
+
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isAllowedProfileCreate(userId) || isAdmin();
@@ -517,6 +627,13 @@ service cloud.firestore {
       allow create, update, delete: if canModerate();
     }
 
+    match /stories/{storyId} {
+      allow read: if isSignedIn();
+      allow create: if isAllowedStoryCreate();
+      allow update: if false;
+      allow delete: if canModerate() || (isSignedIn() && resource.data.authorId == request.auth.uid);
+    }
+
     match /reports/{reportId} {
       allow read: if canModerate() || (isSignedIn() && resource.data.reporterId == request.auth.uid);
       allow create: if isSignedIn() && isAllowedReportCreate();
@@ -540,8 +657,22 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if isSignedIn();
       allow create: if isAdmin() || isAllowedPostCreate();
-      allow update: if isAdmin() || isAllowedPostLikeUpdate() || isAllowedPostCommentUpdate() || isAllowedPostShareUpdate();
+      allow update: if isAdmin() || isAllowedPostLikeUpdate() || isAllowedPostCommentUpdate() || isAllowedPostShareUpdate() || isAllowedPostCommentCountUpdate();
       allow delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+      match /comments/{commentId} {
+        allow read: if isSignedIn();
+        allow create: if isAllowedCommentCreate();
+        allow update: if isAllowedCommentLikeUpdate() || isAllowedCommentReplyCountUpdate();
+        allow delete: if canModerate() || (isSignedIn() && resource.data.userId == request.auth.uid);
+
+        match /replies/{replyId} {
+          allow read: if isSignedIn();
+          allow create: if isAllowedReplyCreate();
+          allow update: if isAllowedCommentLikeUpdate();
+          allow delete: if canModerate() || (isSignedIn() && resource.data.userId == request.auth.uid);
+        }
+      }
     }
   }
 }

@@ -215,13 +215,46 @@ export async function unblockUser(userId, blockedUserId) {
 }
 
 export function listenToUsers(callback) {
-  const usersQuery = query(collection(db, 'users'), orderBy('name'));
+  const usersQuery = query(collection(db, 'users'), orderBy('name'), limit(120));
   return onSnapshot(usersQuery, (snapshot) => {
     callback(
       snapshot.docs
         .map((item) => ({ id: item.id, ...item.data() }))
         .filter((user) => user.accountDeleted !== true),
     );
+  });
+}
+
+export function listenToStories(callback) {
+  const storiesQuery = query(collection(db, 'stories'), orderBy('createdAt', 'desc'), limit(30));
+
+  return onSnapshot(storiesQuery, (snapshot) => {
+    const now = Date.now();
+    callback(
+      snapshot.docs
+        .map((item) => ({ id: item.id, ...item.data() }))
+        .filter((story) => {
+          const expiresAt =
+            typeof story.expiresAt?.toMillis === 'function'
+              ? story.expiresAt.toMillis()
+              : new Date(story.expiresAt || 0).getTime();
+
+          return !expiresAt || expiresAt > now;
+        }),
+    );
+  });
+}
+
+export async function createStory(story) {
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+  await addDoc(collection(db, 'stories'), {
+    ...story,
+    mediaUrl: story.mediaUrl || '',
+    mediaType: story.mediaType || 'text',
+    viewCount: 0,
+    createdAt: serverTimestamp(),
+    expiresAt,
   });
 }
 
@@ -625,10 +658,85 @@ export async function acknowledgeDirectChatRead(chatId, userId) {
 }
 
 export function listenToPosts(callback) {
-  const postsQuery = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+  const postsQuery = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(60));
   return onSnapshot(postsQuery, (snapshot) => {
     callback(snapshot.docs.map((item) => ({ id: item.id, ...item.data() })));
   });
+}
+
+export function listenToPostComments(postId, callback) {
+  const commentsQuery = query(
+    collection(db, 'posts', postId, 'comments'),
+    orderBy('createdAt', 'asc'),
+    limit(80),
+  );
+  const commentsById = new Map();
+  const replyUnsubscribers = new Map();
+
+  const emit = () => {
+    callback(
+      Array.from(commentsById.values()).map((comment) => ({
+        ...comment,
+        replies: comment.replies || [],
+      })),
+    );
+  };
+
+  const unsubscribeComments = onSnapshot(commentsQuery, (snapshot) => {
+    const activeCommentIds = new Set();
+
+    snapshot.docs.forEach((item) => {
+      activeCommentIds.add(item.id);
+      const existingComment = commentsById.get(item.id) || {};
+      commentsById.set(item.id, {
+        ...existingComment,
+        id: item.id,
+        likes: [],
+        replies: [],
+        ...item.data(),
+      });
+
+      if (!replyUnsubscribers.has(item.id)) {
+        const repliesQuery = query(
+          collection(db, 'posts', postId, 'comments', item.id, 'replies'),
+          orderBy('createdAt', 'asc'),
+          limit(120),
+        );
+        const unsubscribeReplies = onSnapshot(repliesQuery, (replySnapshot) => {
+          const currentComment = commentsById.get(item.id);
+          if (!currentComment) return;
+
+          commentsById.set(item.id, {
+            ...currentComment,
+            replies: replySnapshot.docs.map((replyItem) => ({
+              id: replyItem.id,
+              likes: [],
+              ...replyItem.data(),
+            })),
+          });
+          emit();
+        });
+
+        replyUnsubscribers.set(item.id, unsubscribeReplies);
+      }
+    });
+
+    Array.from(commentsById.keys()).forEach((commentId) => {
+      if (!activeCommentIds.has(commentId)) {
+        commentsById.delete(commentId);
+        replyUnsubscribers.get(commentId)?.();
+        replyUnsubscribers.delete(commentId);
+      }
+    });
+
+    emit();
+  });
+
+  return () => {
+    unsubscribeComments();
+    replyUnsubscribers.forEach((unsubscribe) => unsubscribe());
+    replyUnsubscribers.clear();
+  };
 }
 
 export async function createPost(post) {
@@ -638,6 +746,7 @@ export async function createPost(post) {
     signalLevel: post.signalLevel || 'general',
     likes: [],
     comments: [],
+    commentsCount: 0,
     shareCount: 0,
     createdAt: serverTimestamp(),
   });
@@ -654,9 +763,26 @@ export async function togglePostLike(postId, userId, isLiked) {
 }
 
 export async function addPostComment(postId, comment) {
+  const batch = writeBatch(db);
+  const commentRef = doc(collection(db, 'posts', postId, 'comments'));
+
+  batch.set(commentRef, {
+    ...comment,
+    likes: [],
+    repliesCount: 0,
+    createdAt: serverTimestamp(),
+  });
+  batch.update(doc(db, 'posts', postId), {
+    commentsCount: increment(1),
+  });
+
+  await batch.commit();
+}
+
+export async function addLegacyPostComment(postId, comment) {
   await updateDoc(doc(db, 'posts', postId), {
     comments: arrayUnion({
-      id: `comment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: `legacy-comment-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       ...comment,
       likes: [],
       replies: [],
@@ -672,14 +798,51 @@ export async function recordPostShare(postId) {
 }
 
 function findCommentIndexById(comments, commentId) {
+  if (commentId?.startsWith('legacy-index-')) {
+    const index = Number(commentId.replace('legacy-index-', ''));
+    return Number.isInteger(index) ? index : -1;
+  }
+
+  if (commentId?.startsWith('legacy-id-')) {
+    const legacyId = commentId.replace('legacy-id-', '');
+    return comments.findIndex((comment) => comment.id === legacyId);
+  }
+
   return comments.findIndex((comment) => comment.id === commentId);
 }
 
 function findReplyIndexById(replies, replyId) {
+  if (replyId?.startsWith('legacy-index-')) {
+    const index = Number(replyId.replace('legacy-index-', ''));
+    return Number.isInteger(index) ? index : -1;
+  }
+
+  if (replyId?.startsWith('legacy-id-')) {
+    const legacyId = replyId.replace('legacy-id-', '');
+    return replies.findIndex((reply) => reply.id === legacyId);
+  }
+
   return replies.findIndex((reply) => reply.id === replyId);
 }
 
 export async function togglePostCommentLike(postId, commentId, userId) {
+  if (!commentId?.startsWith('legacy-')) {
+    await runTransaction(db, async (transaction) => {
+      const commentRef = doc(db, 'posts', postId, 'comments', commentId);
+      const snapshot = await transaction.get(commentRef);
+
+      if (!snapshot.exists()) {
+        throw new Error('Comment no longer exists.');
+      }
+
+      const likes = Array.isArray(snapshot.data().likes) ? snapshot.data().likes : [];
+      transaction.update(commentRef, {
+        likes: likes.includes(userId) ? arrayRemove(userId) : arrayUnion(userId),
+      });
+    });
+    return;
+  }
+
   await runTransaction(db, async (transaction) => {
     const postRef = doc(db, 'posts', postId);
     const snapshot = await transaction.get(postRef);
@@ -712,6 +875,27 @@ export async function togglePostCommentLike(postId, commentId, userId) {
 }
 
 export async function replyToPostComment(postId, commentId, reply) {
+  const parentReplyId = reply.parentReplyId || '';
+
+  if (!commentId?.startsWith('legacy-')) {
+    const batch = writeBatch(db);
+    const replyRef = doc(collection(db, 'posts', postId, 'comments', commentId, 'replies'));
+
+    batch.set(replyRef, {
+      ...reply,
+      parentReplyId,
+      parentReplyName: reply.parentReplyName || '',
+      likes: [],
+      createdAt: serverTimestamp(),
+    });
+    batch.update(doc(db, 'posts', postId, 'comments', commentId), {
+      repliesCount: increment(1),
+    });
+
+    await batch.commit();
+    return;
+  }
+
   await runTransaction(db, async (transaction) => {
     const postRef = doc(db, 'posts', postId);
     const snapshot = await transaction.get(postRef);
@@ -749,6 +933,23 @@ export async function replyToPostComment(postId, commentId, reply) {
 }
 
 export async function togglePostReplyLike(postId, commentId, replyId, userId) {
+  if (!commentId?.startsWith('legacy-')) {
+    await runTransaction(db, async (transaction) => {
+      const replyRef = doc(db, 'posts', postId, 'comments', commentId, 'replies', replyId);
+      const snapshot = await transaction.get(replyRef);
+
+      if (!snapshot.exists()) {
+        throw new Error('Reply no longer exists.');
+      }
+
+      const likes = Array.isArray(snapshot.data().likes) ? snapshot.data().likes : [];
+      transaction.update(replyRef, {
+        likes: likes.includes(userId) ? arrayRemove(userId) : arrayUnion(userId),
+      });
+    });
+    return;
+  }
+
   await runTransaction(db, async (transaction) => {
     const postRef = doc(db, 'posts', postId);
     const snapshot = await transaction.get(postRef);

@@ -10,8 +10,10 @@ import {
   blockUser,
   createPost,
   createReport,
+  createStory,
   listenToAnnouncements,
   listenToPosts,
+  listenToStories,
   listenToUsers,
   recordPostShare,
   replyToPostComment,
@@ -35,10 +37,12 @@ function FeedPage() {
   const publicName = getUserDisplayName({ ...profile, email: currentUser?.email });
   const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState([]);
+  const [stories, setStories] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [posting, setPosting] = useState(false);
   const [postsReady, setPostsReady] = useState(false);
   const [usersReady, setUsersReady] = useState(false);
+  const [storiesReady, setStoriesReady] = useState(false);
   const [announcementsReady, setAnnouncementsReady] = useState(false);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [feedStatus, setFeedStatus] = useState('');
@@ -77,6 +81,10 @@ function FeedPage() {
       setUsers(nextUsers);
       setUsersReady(true);
     });
+    const unsubscribeStories = listenToStories((nextStories) => {
+      setStories(nextStories);
+      setStoriesReady(true);
+    });
     const unsubscribeAnnouncements = listenToAnnouncements((nextAnnouncements) => {
       setAnnouncements(nextAnnouncements);
       setAnnouncementsReady(true);
@@ -85,6 +93,7 @@ function FeedPage() {
     return () => {
       unsubscribePosts();
       unsubscribeUsers();
+      unsubscribeStories();
       unsubscribeAnnouncements();
       pendingPostTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
       pendingPostTimeoutsRef.current.clear();
@@ -173,14 +182,34 @@ function FeedPage() {
     }
   };
 
-  const handleCommentReply = async (postId, commentId, text) => {
+  const handleCreateStory = async (text) => {
     setFeedStatus('');
 
     try {
-      await replyToPostComment(postId, commentId, {
+      await createStory({
+        authorId: currentUser.uid,
+        authorName: publicName,
+        authorAvatar: profile?.avatarUrl || '',
+        authorDepartment: profile?.showDepartment === false ? '' : profile?.department || '',
+        authorLevel: profile?.showLevel === false ? '' : profile?.level || '',
+        text,
+      });
+    } catch (error) {
+      setFeedStatus(error.message || 'Unable to create story.');
+      throw error;
+    }
+  };
+
+  const handleCommentReply = async (postId, replyTarget, text) => {
+    setFeedStatus('');
+
+    try {
+      await replyToPostComment(postId, replyTarget.commentId, {
         userId: currentUser.uid,
         userName: publicName,
         text,
+        parentReplyId: replyTarget.parentReplyId || '',
+        parentReplyName: replyTarget.parentReplyName || '',
       });
     } catch (error) {
       setFeedStatus(error.message || 'Unable to reply to this comment.');
@@ -500,7 +529,13 @@ function FeedPage() {
           ) : null}
         </section>
 
-        <StatusBoard users={users} />
+        <StatusBoard
+          onCreateStory={handleCreateStory}
+          profile={profile}
+          stories={stories}
+          storiesReady={storiesReady}
+          users={users}
+        />
 
         <PostComposer onSubmit={handleCreatePost} busy={posting} profile={profile} />
 
@@ -545,8 +580,8 @@ function FeedPage() {
                   onLike={() => handleLike(post)}
                   onComment={(text) => handleComment(post.id, text)}
                   onCommentLike={(commentIndex) => handleCommentLike(post.id, commentIndex)}
-                  onCommentReply={(commentIndex, text) =>
-                    handleCommentReply(post.id, commentIndex, text)
+                  onCommentReply={(replyTarget, text) =>
+                    handleCommentReply(post.id, replyTarget, text)
                   }
                   onReplyLike={(commentIndex, replyIndex) =>
                     handleReplyLike(post.id, commentIndex, replyIndex)

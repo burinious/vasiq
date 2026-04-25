@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Flag, Heart, MessageCircle, Reply, Share2, ShieldOff, Sparkles } from 'lucide-react';
 import { optimizeCloudinaryImage } from '../../firebase/cloudinary';
+import { listenToPostComments } from '../../firebase/firestore';
 import { getPostCategoryMeta, getSignalLevelMeta } from '../../lib/campusSignal';
 
 function formatTimestamp(timestamp) {
@@ -29,6 +30,7 @@ function PostCard({
 }) {
   const [comment, setComment] = useState('');
   const [replyTarget, setReplyTarget] = useState(null);
+  const [liveComments, setLiveComments] = useState([]);
   const hasImage = Boolean(post.imageUrl);
   const authorName = post.authorDisplayName || post.authorName || 'Student';
   const categoryMeta = getPostCategoryMeta(
@@ -36,9 +38,36 @@ function PostCard({
   );
   const signalMeta = getSignalLevelMeta(post.signalLevel || 'general');
   const likeCount = post.likes?.length || 0;
-  const commentCount = post.comments?.length || 0;
   const shareCount = post.shareCount || 0;
-  const visibleComments = (post.comments || [])
+
+  useEffect(() => {
+    if (!post.id) return undefined;
+
+    return listenToPostComments(post.id, setLiveComments);
+  }, [post.id]);
+
+  const legacyComments = useMemo(
+    () =>
+      (post.comments || []).map((item, index) => ({
+        ...item,
+        id: item.id ? `legacy-id-${item.id}` : `legacy-index-${index}`,
+        likes: item.likes || [],
+        replies: (item.replies || []).map((replyItem, replyIndex) => ({
+          ...replyItem,
+          id: replyItem.id ? `legacy-id-${replyItem.id}` : `legacy-index-${replyIndex}`,
+          likes: replyItem.likes || [],
+          isLegacy: true,
+        })),
+        isLegacy: true,
+      })),
+    [post.comments],
+  );
+  const allComments = useMemo(
+    () => [...legacyComments, ...liveComments],
+    [legacyComments, liveComments],
+  );
+  const commentCount = Math.max(post.commentsCount || 0, allComments.length);
+  const visibleComments = allComments
     .map((item) => ({
       ...item,
       likes: item.likes || [],
@@ -57,7 +86,7 @@ function PostCard({
 
     try {
       if (activeReplyTarget) {
-        await onCommentReply(activeReplyTarget.commentId, trimmedComment);
+        await onCommentReply(activeReplyTarget, trimmedComment);
       } else {
         await onComment(trimmedComment);
       }
@@ -211,6 +240,8 @@ function PostCard({
                       setReplyTarget({
                         commentId: item.id,
                         name: item.userName || 'comment',
+                        parentReplyId: '',
+                        parentReplyName: '',
                       })
                     }
                   >
@@ -234,7 +265,12 @@ function PostCard({
                           className="comment-reply-item"
                         >
                           <strong>{replyItem.userName}</strong>
-                          <p>{replyItem.text}</p>
+                          <p>
+                            {replyItem.parentReplyName ? (
+                              <span>@{replyItem.parentReplyName} </span>
+                            ) : null}
+                            {replyItem.text}
+                          </p>
                           <div className="comment-actions">
                             <button
                               type="button"
@@ -243,6 +279,20 @@ function PostCard({
                             >
                               <Heart size={13} strokeWidth={2.2} aria-hidden="true" />
                               <span>{replyLikes.length ? replyLikes.length : 'Like'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setReplyTarget({
+                                  commentId: item.id,
+                                  name: replyItem.userName || 'reply',
+                                  parentReplyId: replyItem.id,
+                                  parentReplyName: replyItem.userName || 'reply',
+                                })
+                              }
+                            >
+                              <Reply size={13} strokeWidth={2.2} aria-hidden="true" />
+                              <span>Reply</span>
                             </button>
                             <button
                               type="button"
