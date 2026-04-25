@@ -10,7 +10,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
-import { auth } from './config';
+import { auth, authPersistenceReady } from './config';
 import { assertEmailNotDeleted, createUserProfile, markAccountDeleted } from './firestore';
 import { isAdminEmail } from '../utils/admin';
 import { getFallbackNameFromEmail } from '../utils/userIdentity';
@@ -59,6 +59,7 @@ function getEmailActionSettings() {
 }
 
 export async function registerWithEmail({ email, password }) {
+  await authPersistenceReady;
   const normalizedEmail = email.trim().toLowerCase();
   const credential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
   const fallbackName = getFallbackNameFromEmail(normalizedEmail);
@@ -92,6 +93,7 @@ export async function registerWithEmail({ email, password }) {
 }
 
 export async function loginWithEmail({ email, password }) {
+  await authPersistenceReady;
   const normalizedEmail = email.trim().toLowerCase();
   const credential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
 

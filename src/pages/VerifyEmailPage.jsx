@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getReadableAuthError, resendVerificationEmail } from '../firebase/auth';
+import { isSeededDemoEmail } from '../utils/admin';
 
 function VerifyEmailPage() {
   const { currentUser, profile, refreshVerification, signOut } = useAuth();
@@ -12,7 +13,7 @@ function VerifyEmailPage() {
     return <Navigate to="/auth" replace />;
   }
 
-  if (currentUser.emailVerified || profile?.isDemoAccount) {
+  if (currentUser.emailVerified || profile?.isDemoAccount || isSeededDemoEmail(currentUser.email)) {
     return <Navigate to="/feed" replace />;
   }
 

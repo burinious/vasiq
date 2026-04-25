@@ -7,6 +7,7 @@ import {
   loginWithEmail,
   registerWithEmail,
 } from '../firebase/auth';
+import { isSeededDemoEmail } from '../utils/admin';
 
 const initialRegisterState = {
   email: '',
@@ -68,11 +69,11 @@ function AuthPage() {
     return <Loader />;
   }
 
-  if (currentUser?.emailVerified || profile?.isDemoAccount) {
+  if (currentUser?.emailVerified || profile?.isDemoAccount || isSeededDemoEmail(currentUser?.email)) {
     return <Navigate to={redirectTo} replace />;
   }
 
-  if (currentUser && !currentUser.emailVerified) {
+  if (currentUser && !currentUser.emailVerified && !isSeededDemoEmail(currentUser.email)) {
     return <Navigate to="/verify-email" replace />;
   }
 

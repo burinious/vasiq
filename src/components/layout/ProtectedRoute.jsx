@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { isModeratorUser } from '../../utils/admin';
+import { isModeratorUser, isSeededDemoEmail } from '../../utils/admin';
 import Loader from './Loader';
 
 function ProtectedRoute({ children, requireVerified = false, requireAdmin = false }) {
@@ -15,7 +15,12 @@ function ProtectedRoute({ children, requireVerified = false, requireAdmin = fals
     return <Navigate to="/auth" replace state={{ from: location }} />;
   }
 
-  if (requireVerified && !currentUser.emailVerified && !profile?.isDemoAccount) {
+  if (
+    requireVerified &&
+    !currentUser.emailVerified &&
+    !profile?.isDemoAccount &&
+    !isSeededDemoEmail(currentUser.email)
+  ) {
     return <Navigate to="/verify-email" replace />;
   }
 

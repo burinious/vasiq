@@ -31,8 +31,13 @@ export const app = firebaseReady ? initializeApp(firebaseConfig) : null;
 
 export const auth = app ? getAuth(app) : null;
 
+export const authPersistenceReady =
+  auth && typeof window !== 'undefined'
+    ? setPersistence(auth, browserLocalPersistence).catch((error) => {
+        console.error('Unable to enable local auth persistence.', error);
+      })
+    : Promise.resolve();
+
 if (auth && typeof window !== 'undefined') {
-  setPersistence(auth, browserLocalPersistence).catch((error) => {
-    console.error('Unable to enable local auth persistence.', error);
-  });
+  authPersistenceReady.catch(() => {});
 }
