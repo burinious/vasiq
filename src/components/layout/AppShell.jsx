@@ -62,24 +62,24 @@ const mobileNavigationItems = navigationItems.filter((item) =>
 
 const routeMeta = {
   '/feed': {
-    kicker: 'Live feed',
-    title: 'Campus pulse',
-    note: 'Stories, notices, and quick social momentum across VASIQ.',
+    kicker: 'Campus pulse',
+    title: 'Live student signal',
+    note: 'Urgent updates, useful gist, and what students should open right now.',
   },
   '/groups': {
-    kicker: 'Study circles',
-    title: 'Group spaces',
-    note: 'Keep projects, departments, and communities moving in one place.',
+    kicker: 'Group radar',
+    title: 'Useful circles',
+    note: 'Departments, hostels, study crews, builders, and community spaces.',
   },
   '/chat': {
     kicker: 'Direct messages',
     title: 'Conversations',
-    note: 'Fast check-ins, planning, and back-and-forth with classmates.',
+    note: 'Fast check-ins, planning, and moving campus energy person to person.',
   },
   '/profile': {
-    kicker: 'Your signal',
-    title: 'Profile studio',
-    note: 'Tighten the way you show up across the campus network.',
+    kicker: 'Identity',
+    title: 'Campus card',
+    note: 'Show enough context for students to trust and recognize you quickly.',
   },
   '/help': {
     kicker: 'Support',
@@ -92,6 +92,12 @@ function AppShell() {
   const { currentUser, profile, signOut } = useAuth();
   const location = useLocation();
   const [theme, setTheme] = useState(resolveThemePreference);
+  const [dataSaver, setDataSaver] = useState(() => {
+    if (typeof navigator === 'undefined') return false;
+
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    return Boolean(connection?.saveData || ['slow-2g', '2g'].includes(connection?.effectiveType));
+  });
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [skippingOnboarding, setSkippingOnboarding] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -120,6 +126,20 @@ function AppShell() {
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (!connection) return undefined;
+
+    const handleConnectionChange = () => {
+      setDataSaver(
+        Boolean(connection.saveData || ['slow-2g', '2g'].includes(connection.effectiveType)),
+      );
+    };
+
+    connection.addEventListener?.('change', handleConnectionChange);
+    return () => connection.removeEventListener?.('change', handleConnectionChange);
+  }, []);
 
   useEffect(() => {
     if (!currentUser || profile?.onboardingSkippedAt || location.pathname === '/help') return;
@@ -161,7 +181,7 @@ function AppShell() {
   };
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${dataSaver ? 'app-shell-save-data' : ''}`}>
       <div className="app-shell-atmosphere" aria-hidden="true">
         <span className="app-shell-glow app-shell-glow-a" />
         <span className="app-shell-glow app-shell-glow-b" />
@@ -284,7 +304,7 @@ function AppShell() {
               </div>
               <label className="social-search">
                 <Search size={16} strokeWidth={2.2} aria-hidden="true" />
-                <input type="text" placeholder="Search people, groups, or campus gist" />
+                <input type="text" placeholder="Search hostel gist, opportunities, groups, or people" />
               </label>
             </div>
 

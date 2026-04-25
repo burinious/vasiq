@@ -3,6 +3,7 @@ node_modules/
 .env
 .firebase/
 dist/
+build/
 .vite/
 *.log
 npm-debug.log*

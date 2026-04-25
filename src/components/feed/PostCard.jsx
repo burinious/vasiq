@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Flag, Heart, MessageCircle, Reply, Share2, ShieldOff, Sparkles } from 'lucide-react';
 import { optimizeCloudinaryImage } from '../../firebase/cloudinary';
+import { getPostCategoryMeta, getSignalLevelMeta } from '../../lib/campusSignal';
 
 function formatTimestamp(timestamp) {
   if (!timestamp) return 'Just now';
@@ -30,13 +31,16 @@ function PostCard({
   const [replyTarget, setReplyTarget] = useState(null);
   const hasImage = Boolean(post.imageUrl);
   const authorName = post.authorDisplayName || post.authorName || 'Student';
+  const categoryMeta = getPostCategoryMeta(
+    post.category || (post.signalLevel === 'urgent' ? 'urgent' : 'social'),
+  );
+  const signalMeta = getSignalLevelMeta(post.signalLevel || 'general');
   const likeCount = post.likes?.length || 0;
   const commentCount = post.comments?.length || 0;
   const shareCount = post.shareCount || 0;
   const visibleComments = (post.comments || [])
-    .map((item, index) => ({
+    .map((item) => ({
       ...item,
-      _index: index,
       likes: item.likes || [],
       replies: item.replies || [],
     }))
@@ -53,7 +57,7 @@ function PostCard({
 
     try {
       if (activeReplyTarget) {
-        await onCommentReply(activeReplyTarget.index, trimmedComment);
+        await onCommentReply(activeReplyTarget.commentId, trimmedComment);
       } else {
         await onComment(trimmedComment);
       }
@@ -88,9 +92,23 @@ function PostCard({
                 <Sparkles size={12} strokeWidth={2.2} aria-hidden="true" />
                 <span>Campus</span>
               </span>
+              <span className={`post-category-pill post-category-pill-${categoryMeta.value}`}>
+                {categoryMeta.label}
+              </span>
+              {signalMeta.value !== 'general' ? (
+                <span className={`post-signal-pill post-signal-pill-${signalMeta.value}`}>
+                  {signalMeta.label}
+                </span>
+              ) : null}
             </div>
-            <p>{post.authorDepartment || 'Campus community'}</p>
-            <span className="post-time">{formatTimestamp(post.createdAt)} - Campus circle</span>
+            <p>
+              {post.authorDepartment || 'Campus community'}
+              {post.authorLevel ? ` / ${post.authorLevel}` : ''}
+            </p>
+            <span className="post-time">
+              {formatTimestamp(post.createdAt)}
+              {post.authorResidence ? ` - ${post.authorResidence}` : ' - Campus circle'}
+            </span>
           </div>
         </div>
         <div className="post-safety-actions">
@@ -175,14 +193,14 @@ function PostCard({
             const isCommentLiked = item.likes.includes(currentUserId);
 
             return (
-              <div key={item.id || `${item.userId}-${item.createdAt}-${item._index}`} className="comment-item">
+              <div key={item.id || `${item.userId}-${item.createdAt}`} className="comment-item">
                 <strong>{item.userName}</strong>
                 <p>{item.text}</p>
                 <div className="comment-actions">
                   <button
                     type="button"
                     className={isCommentLiked ? 'comment-action-active' : ''}
-                    onClick={() => onCommentLike(item._index)}
+                    onClick={() => onCommentLike(item.id)}
                   >
                     <Heart size={13} strokeWidth={2.2} aria-hidden="true" />
                     <span>{commentLikes ? commentLikes : 'Like'}</span>
@@ -191,7 +209,7 @@ function PostCard({
                     type="button"
                     onClick={() =>
                       setReplyTarget({
-                        index: item._index,
+                        commentId: item.id,
                         name: item.userName || 'comment',
                       })
                     }
@@ -221,7 +239,7 @@ function PostCard({
                             <button
                               type="button"
                               className={isReplyLiked ? 'comment-action-active' : ''}
-                              onClick={() => onReplyLike(item._index, replyIndex)}
+                              onClick={() => onReplyLike(item.id, replyItem.id)}
                             >
                               <Heart size={13} strokeWidth={2.2} aria-hidden="true" />
                               <span>{replyLikes.length ? replyLikes.length : 'Like'}</span>

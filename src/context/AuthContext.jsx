@@ -1,9 +1,9 @@
 import { onAuthStateChanged, reload, signOut as firebaseSignOut } from 'firebase/auth';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { auth, firebaseReady } from '../firebase/config';
-import { isAdminEmail, isAdminUser } from '../utils/admin';
-import { ensurePredefinedGroups } from '../firebase/seed';
 import { listenToUserProfile, updateUserProfile } from '../firebase/firestore';
+import { ensurePredefinedGroups } from '../firebase/seed';
+import { isAdminEmail, isAdminUser } from '../utils/admin';
 import { getFallbackNameFromEmail } from '../utils/userIdentity';
 
 const AuthContext = createContext(null);
@@ -21,8 +21,10 @@ export function AuthProvider({ children }) {
     }
 
     let unsubscribeProfile = () => {};
+    let authRunId = 0;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      const currentRunId = ++authRunId;
       unsubscribeProfile();
       setCurrentUser(user);
       setBootstrapError('');
@@ -34,62 +36,88 @@ export function AuthProvider({ children }) {
       }
 
       const shouldSeedAnnouncements = isAdminEmail(user.email);
-
-      // Do not block app startup on Firestore bootstrap writes.
-      ensurePredefinedGroups({ includeAnnouncements: shouldSeedAnnouncements }).catch((error) => {
-        console.error('Unable to seed predefined groups.', error);
-        setBootstrapError(
-          error?.message || 'Unable to reach Firestore. Check your Firebase setup.',
-        );
-      });
-
       const loadingTimeout = window.setTimeout(() => {
-        setLoading(false);
+        if (currentRunId === authRunId) {
+          setLoading(false);
+        }
       }, 7000);
 
-      unsubscribeProfile = listenToUserProfile(
-        user.uid,
-        (nextProfile) => {
-          window.clearTimeout(loadingTimeout);
-          if (nextProfile?.accountDeleted) {
-            firebaseSignOut(auth);
-            setProfile(null);
-            setLoading(false);
+      try {
+        // Do not block app startup on Firestore bootstrap writes.
+        ensurePredefinedGroups({ includeAnnouncements: shouldSeedAnnouncements }).catch((error) => {
+          if (currentRunId !== authRunId) {
             return;
           }
 
-          const fallbackName = getFallbackNameFromEmail(user.email);
-          const profileUpdates = {};
-
-          if (shouldSeedAnnouncements && nextProfile?.role !== 'admin') {
-            profileUpdates.role = 'admin';
-          }
-
-          if (!nextProfile?.name?.trim()) {
-            profileUpdates.name = fallbackName;
-          }
-
-          if (Object.keys(profileUpdates).length) {
-            updateUserProfile(user.uid, profileUpdates).catch((error) => {
-              console.error('Unable to sync auth profile state.', error);
-            });
-          }
-          setProfile(nextProfile);
-          setLoading(false);
-        },
-        (error) => {
-          window.clearTimeout(loadingTimeout);
-          console.error('Unable to load user profile.', error);
+          console.error('Unable to seed predefined groups.', error);
           setBootstrapError(
-            error?.message || 'Unable to load your profile. Check Firestore setup.',
+            error?.message || 'Unable to reach Firestore. Check your Firebase setup.',
           );
-          setProfile(null);
-          setLoading(false);
-        },
-      );
+        });
+
+        unsubscribeProfile = listenToUserProfile(
+          user.uid,
+          (nextProfile) => {
+            if (currentRunId !== authRunId) {
+              return;
+            }
+
+            window.clearTimeout(loadingTimeout);
+            if (nextProfile?.accountDeleted) {
+              firebaseSignOut(auth);
+              setProfile(null);
+              setLoading(false);
+              return;
+            }
+
+            const fallbackName = getFallbackNameFromEmail(user.email);
+            const profileUpdates = {};
+
+            if (shouldSeedAnnouncements && nextProfile?.role !== 'admin') {
+              profileUpdates.role = 'admin';
+            }
+
+            if (!nextProfile?.name?.trim()) {
+              profileUpdates.name = fallbackName;
+            }
+
+            if (Object.keys(profileUpdates).length) {
+              updateUserProfile(user.uid, profileUpdates).catch((error) => {
+                console.error('Unable to sync auth profile state.', error);
+              });
+            }
+            setProfile(nextProfile);
+            setLoading(false);
+          },
+          (error) => {
+            if (currentRunId !== authRunId) {
+              return;
+            }
+
+            window.clearTimeout(loadingTimeout);
+            console.error('Unable to load user profile.', error);
+            setBootstrapError(
+              error?.message || 'Unable to load your profile. Check Firestore setup.',
+            );
+            setProfile(null);
+            setLoading(false);
+          },
+        );
+      } catch (error) {
+        if (currentRunId !== authRunId) {
+          return;
+        }
+
+        window.clearTimeout(loadingTimeout);
+        console.error('Unable to load auth bootstrap dependencies.', error);
+        setBootstrapError(error?.message || 'Unable to load your profile. Check Firestore setup.');
+        setProfile(null);
+        setLoading(false);
+      }
     });
 
     return () => {
+      authRunId += 1;
       unsubscribeProfile();
       unsubscribeAuth();
     };

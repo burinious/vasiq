@@ -28,6 +28,8 @@ function ProfilePage() {
     displayName: '',
     department: '',
     level: '',
+    residence: '',
+    statusText: '',
     showDepartment: true,
     showLevel: true,
   });
@@ -41,9 +43,16 @@ function ProfilePage() {
     email: currentUser?.email,
   });
   const profileCompletion = Math.round(
-    ([publicName, formValues.department || profile?.department, formValues.level || profile?.level, avatarPreview]
+    ([
+      publicName,
+      formValues.department || profile?.department,
+      formValues.level || profile?.level,
+      formValues.residence || profile?.residence,
+      formValues.statusText || profile?.statusText,
+      avatarPreview,
+    ]
       .filter(Boolean).length /
-      4) *
+      6) *
       100,
   );
   const levelOptions = ['100L', '200L', '300L', '400L', '500L', 'Postgraduate'];
@@ -54,6 +63,8 @@ function ProfilePage() {
       displayName: profile?.displayName || profile?.name || '',
       department: profile?.department || '',
       level: profile?.level || '',
+      residence: profile?.residence || '',
+      statusText: profile?.statusText || '',
       showDepartment: profile?.showDepartment !== false,
       showLevel: profile?.showLevel !== false,
     });
@@ -89,6 +100,8 @@ function ProfilePage() {
           name: fallbackName,
           department: formValues.department.trim(),
           level: formValues.level,
+          residence: formValues.residence.trim(),
+          statusText: formValues.statusText.trim(),
           showDepartment: formValues.showDepartment,
           showLevel: formValues.showLevel,
           avatarUrl,
@@ -115,12 +128,13 @@ function ProfilePage() {
             <h2>Shape how campus sees you.</h2>
             <p>
               Keep your identity clear so your posts, chats, and communities always carry the
-              right student details.
+              right campus context.
             </p>
             <div className="profile-hero-badges">
               <span>{currentUser.emailVerified ? 'Email verified' : 'Email not verified'}</span>
               <span>{formValues.showDepartment ? (formValues.department || 'Department pending') : 'Department private'}</span>
               <span>{formValues.showLevel ? (formValues.level || 'Level pending') : 'Level private'}</span>
+              <span>{formValues.residence || 'Residence pending'}</span>
             </div>
           </div>
 
@@ -137,6 +151,7 @@ function ProfilePage() {
               <p>
                 {formValues.showDepartment ? formValues.department || 'Campus community' : 'Private department'} / {formValues.showLevel ? formValues.level || 'Student' : 'Private level'}
               </p>
+              <p>{formValues.residence || 'Residence not set yet'}</p>
             </div>
           </div>
         </div>
@@ -209,6 +224,31 @@ function ProfilePage() {
                   </select>
                 </label>
 
+                <label className="profile-field">
+                  <span>Residence or hostel</span>
+                  <input
+                    className="input"
+                    value={formValues.residence}
+                    onChange={(event) =>
+                      setFormValues((current) => ({ ...current, residence: event.target.value }))
+                    }
+                    placeholder="Hostel, lodge, or off-campus area"
+                  />
+                </label>
+
+                <label className="profile-field">
+                  <span>Current status</span>
+                  <textarea
+                    className="input textarea"
+                    value={formValues.statusText}
+                    onChange={(event) =>
+                      setFormValues((current) => ({ ...current, statusText: event.target.value }))
+                    }
+                    placeholder="What are you working on, looking for, or heading to on campus?"
+                    rows={3}
+                  />
+                </label>
+
                 <div className="profile-visibility-grid">
                   <label className="profile-visibility-option">
                     <input
@@ -276,6 +316,7 @@ function ProfilePage() {
           <p>
             {formValues.showDepartment ? formValues.department || 'Department not set' : 'Department hidden'} / {formValues.showLevel ? formValues.level || 'Level not set' : 'Level hidden'}
           </p>
+          <p>{formValues.residence || 'Residence not added yet'}</p>
           <div className="profile-summary-progress">
             <div className="profile-summary-progress-bar">
               <span style={{ width: `${profileCompletion}%` }} />
@@ -283,8 +324,8 @@ function ProfilePage() {
             <strong>{profileCompletion}% ready</strong>
           </div>
           <p>
-            A complete profile makes your posts, comments, and chats feel more trustworthy and
-            easier to connect with.
+            A complete profile makes your posts, comments, and chats feel more trustworthy,
+            local, and easier to act on.
           </p>
         </section>
 
@@ -292,16 +333,16 @@ function ProfilePage() {
           <p className="eyebrow">Quick tips</p>
           <div className="profile-tips-list">
             <article>
-              <strong>Use a clear face photo</strong>
-              <p>It makes your posts and chats easier to recognize.</p>
+              <strong>Add where you stay</strong>
+              <p>Hostel and off-campus context makes gist, logistics, and discovery more relevant.</p>
             </article>
             <article>
               <strong>Keep your department current</strong>
-              <p>Groups and classmates can find you faster when your identity is accurate.</p>
+              <p>Groups and classmates find you faster when your campus identity is accurate.</p>
             </article>
             <article>
-              <strong>Verify your email</strong>
-              <p>Verified accounts build more trust across the community.</p>
+              <strong>Use a living status</strong>
+              <p>Students connect faster when they can see what you are looking for right now.</p>
             </article>
           </div>
         </section>

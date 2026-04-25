@@ -31,6 +31,13 @@ function getNumberFlag(name, fallbackValue) {
   return Number.isFinite(value) ? value : fallbackValue;
 }
 
+function getStringFlag(name, fallbackValue) {
+  const flag = process.argv.find((argument) => argument.startsWith(`--${name}=`));
+  if (!flag) return fallbackValue;
+
+  return flag.split('=').slice(1).join('=') || fallbackValue;
+}
+
 async function verifyAccount(apiKey, email) {
   const response = await fetch(
     `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
@@ -72,10 +79,11 @@ async function main() {
 
   const from = Math.max(1, getNumberFlag('from', 1));
   const to = Math.max(from, getNumberFlag('to', 20));
+  const prefix = getStringFlag('prefix', 'demo');
   const rows = [];
 
   for (let index = from; index <= to; index += 1) {
-    const email = `demo${String(index).padStart(2, '0')}@vasiq.app`;
+    const email = `${prefix}${String(index).padStart(2, '0')}@vasiq.app`;
     const result = await verifyAccount(apiKey, email);
     const status = result.ok
       ? 'live'

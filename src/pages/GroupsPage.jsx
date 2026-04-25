@@ -12,11 +12,14 @@ import {
   sendGroupMessage,
   toggleGroupMembership,
 } from '../firebase/firestore';
+import { GROUP_TYPES, getGroupTypeMeta } from '../lib/campusSignal';
 import { getUserDisplayName } from '../utils/userIdentity';
 
 const initialGroupRequestState = {
   name: '',
   description: '',
+  type: 'community',
+  audience: '',
 };
 
 function GroupsPage() {
@@ -68,12 +71,23 @@ function GroupsPage() {
 
   useEffect(() => {
     const unsubscribe = listenToGroups((nextGroups) => {
-      setGroups(nextGroups);
+      const sortedGroups = [...nextGroups].sort((first, second) => {
+        const firstType = getGroupTypeMeta(first.type).label;
+        const secondType = getGroupTypeMeta(second.type).label;
 
-      if (chatGroupId && nextGroups.some((group) => group.id === chatGroupId)) {
+        if (firstType !== secondType) {
+          return firstType.localeCompare(secondType);
+        }
+
+        return first.name.localeCompare(second.name);
+      });
+
+      setGroups(sortedGroups);
+
+      if (chatGroupId && sortedGroups.some((group) => group.id === chatGroupId)) {
         setSelectedGroupId(chatGroupId);
-      } else if (!selectedGroupId && nextGroups.length) {
-        setSelectedGroupId(nextGroups[0].id);
+      } else if (!selectedGroupId && sortedGroups.length) {
+        setSelectedGroupId(sortedGroups[0].id);
       }
     });
 
@@ -86,6 +100,7 @@ function GroupsPage() {
   }, []);
 
   const selectedGroup = groups.find((group) => group.id === selectedGroupId) || null;
+  const selectedGroupType = getGroupTypeMeta(selectedGroup?.type);
   const isGroupMember = (group) =>
     Boolean(
       group?.members?.includes(currentUser.uid) ||
@@ -95,6 +110,8 @@ function GroupsPage() {
   const selectedGroupIsMember = isGroupMember(selectedGroup);
   const selectedGroupIsCreator = selectedGroup?.createdBy === currentUser.uid;
   const selectedGroupMembers = users.filter((user) => selectedGroup?.members?.includes(user.id));
+  const featuredGroups = groups.slice(0, 4);
+  const activeTypeLabels = [...new Set(groups.map((group) => getGroupTypeMeta(group.type).label))].slice(0, 5);
 
   useEffect(() => {
     if (!selectedGroup || !selectedGroupIsMember) {
@@ -189,6 +206,8 @@ function GroupsPage() {
       await requestGroupCreation({
         name,
         description,
+        type: groupRequestValues.type,
+        audience: groupRequestValues.audience.trim(),
         requesterId: currentUser.uid,
         requesterName: getUserDisplayName({ ...profile, email: currentUser.email }),
         requesterEmail: currentUser.email,
@@ -336,11 +355,38 @@ function GroupsPage() {
   return (
     <div className={`page-grid groups-grid ${chatGroupId ? 'groups-grid-chat-open' : ''}`}>
       <section className="group-list">
+        <section className="panel groups-overview-card">
+          <div className="groups-overview-copy">
+            <p className="eyebrow">Group radar</p>
+            <h2>Join the circles students already rely on.</h2>
+            <p>
+              Treat groups like useful campus infrastructure: department updates, hostel gist,
+              career leads, builders, and real community momentum.
+            </p>
+            <div className="groups-overview-tags">
+              {activeTypeLabels.map((label) => (
+                <span key={label}>{label}</span>
+              ))}
+            </div>
+          </div>
+          <div className="groups-overview-grid">
+            {featuredGroups.map((group) => (
+              <article key={`featured-${group.id}`} className="groups-overview-mini">
+                <strong>{group.name}</strong>
+                <p>{group.audience || getGroupTypeMeta(group.type).label}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
         <section className="panel group-request-card">
           <div>
             <p className="eyebrow">Create a group</p>
-            <h3>Request a new campus space</h3>
-            <p>Submit your idea. An admin or moderator will approve it before it goes live.</p>
+            <h3>Request a useful campus space</h3>
+            <p>
+              Submit a group that solves a real student use case. Admins will review it
+              before it goes live.
+            </p>
           </div>
           <form className="group-request-form" onSubmit={handleRequestGroup}>
             <input
@@ -364,6 +410,30 @@ function GroupsPage() {
               }
               rows={3}
               required
+            />
+            <select
+              className="input"
+              value={groupRequestValues.type}
+              onChange={(event) =>
+                setGroupRequestValues((current) => ({ ...current, type: event.target.value }))
+              }
+            >
+              {GROUP_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+            <input
+              className="input"
+              placeholder="Who is this for? e.g. 300L students, hostel residents, media creators"
+              value={groupRequestValues.audience}
+              onChange={(event) =>
+                setGroupRequestValues((current) => ({
+                  ...current,
+                  audience: event.target.value,
+                }))
+              }
             />
             <button type="submit" className="primary-button" disabled={requestingGroup}>
               {requestingGroup ? 'Submitting...' : 'Submit for review'}
@@ -393,7 +463,7 @@ function GroupsPage() {
           title={selectedGroup?.name || 'Select a group'}
           subtitle={
             selectedGroupIsMember
-              ? selectedGroup?.description
+              ? `${selectedGroup?.description || ''}${selectedGroup?.audience ? ` • ${selectedGroup.audience}` : ''}`
               : 'Join a group to participate in its community chat.'
           }
           messages={mergedMessages}
@@ -410,7 +480,10 @@ function GroupsPage() {
               <div>
                 <p className="eyebrow">Owner controls</p>
                 <h2>Members</h2>
-                <p>You created this group, so you can remove members when needed.</p>
+                <p>
+                  You created this {selectedGroupType.label.toLowerCase()} group, so you can
+                  remove members when needed.
+                </p>
               </div>
             </div>
             <div className="group-owner-list">

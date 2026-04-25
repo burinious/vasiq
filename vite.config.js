@@ -8,6 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   plugins: [react()],
   build: {
+    outDir: 'build',
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -15,7 +16,19 @@ export default defineConfig({
             return undefined;
           }
 
-          if (id.includes('firebase')) {
+          if (id.includes('firebase/auth') || id.includes('@firebase/auth')) {
+            return 'firebase-auth';
+          }
+
+          if (id.includes('firebase/firestore') || id.includes('@firebase/firestore')) {
+            return 'firebase-firestore';
+          }
+
+          if (id.includes('firebase/app') || id.includes('@firebase/app')) {
+            return 'firebase-app';
+          }
+
+          if (id.includes('firebase') || id.includes('@firebase')) {
             return 'firebase-vendor';
           }
 

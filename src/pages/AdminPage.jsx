@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Activity, Flag, Megaphone, ShieldCheck, Trash2, UsersRound } from 'lucide-react';
+import { Activity, Edit3, Flag, LogIn, Megaphone, Save, ShieldCheck, Trash2, UsersRound, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { loginWithEmail } from '../firebase/auth';
 import {
   approveGroupRequest,
   createAnnouncement,
   createGroup,
   deleteAnnouncement,
+  deleteGroup,
   deletePost,
   declineGroupRequest,
   listenToAnnouncements,
@@ -17,6 +20,8 @@ import {
   seedVasiqCampusDemo,
   seedVasiqSampleUsers,
   toggleAnnouncementStatus,
+  updateAnnouncement,
+  updateGroup,
   updateReportStatus,
   updateUserProfile,
 } from '../firebase/firestore';
@@ -30,7 +35,15 @@ const initialAnnouncementState = {
 const initialGroupState = {
   name: '',
   description: '',
+  type: 'community',
+  audience: '',
 };
+
+const seedPassword = 'VasiqDemo#2026';
+const seededLoginAccounts = Array.from({ length: 50 }, (_, index) => ({
+  email: `vuser${String(index + 1).padStart(2, '0')}@vasiq.app`,
+  label: `vuser${String(index + 1).padStart(2, '0')}`,
+}));
 
 function formatTimestamp(timestamp) {
   if (!timestamp) return 'Just now';
@@ -43,6 +56,7 @@ function formatTimestamp(timestamp) {
 
 function AdminPage() {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [groups, setGroups] = useState([]);
   const [groupRequests, setGroupRequests] = useState([]);
@@ -59,6 +73,11 @@ function AdminPage() {
   const [deletingPostId, setDeletingPostId] = useState('');
   const [reviewingRequestId, setReviewingRequestId] = useState('');
   const [reviewingReportId, setReviewingReportId] = useState('');
+  const [editingAnnouncementId, setEditingAnnouncementId] = useState('');
+  const [announcementDraft, setAnnouncementDraft] = useState(initialAnnouncementState);
+  const [editingGroupId, setEditingGroupId] = useState('');
+  const [groupDraft, setGroupDraft] = useState(initialGroupState);
+  const [loggingInSeedEmail, setLoggingInSeedEmail] = useState('');
 
   useEffect(() => {
     const unsubscribeUsers = listenToUsers(setUsers);
@@ -112,7 +131,6 @@ function AdminPage() {
 
   const recentPosts = useMemo(() => posts.slice(0, 5), [posts]);
   const recentReports = useMemo(() => reports.slice(0, 8), [reports]);
-  const spotlightGroups = useMemo(() => groups.slice(0, 5), [groups]);
   const queuedAnnouncements = useMemo(() => announcements.slice(0, 6), [announcements]);
 
   const handleReviewGroupRequest = async (request, nextStatus) => {
@@ -214,6 +232,8 @@ function AdminPage() {
       await createGroup({
         name: groupValues.name.trim(),
         description: groupValues.description.trim(),
+        type: groupValues.type || 'community',
+        audience: groupValues.audience.trim(),
         createdBy: currentUser.uid,
         createdByEmail: currentUser.email,
       });
@@ -223,6 +243,97 @@ function AdminPage() {
       setStatus(error.message || 'Unable to create group.');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const startEditingAnnouncement = (announcement) => {
+    setEditingAnnouncementId(announcement.id);
+    setAnnouncementDraft({
+      title: announcement.title || '',
+      tag: announcement.tag || 'Announcement',
+      message: announcement.message || '',
+    });
+  };
+
+  const handleUpdateAnnouncement = async (announcementId) => {
+    setBusy(true);
+    setStatus('');
+
+    try {
+      await updateAnnouncement(announcementId, {
+        title: announcementDraft.title.trim(),
+        tag: announcementDraft.tag.trim() || 'Announcement',
+        message: announcementDraft.message.trim(),
+      });
+      setEditingAnnouncementId('');
+      setAnnouncementDraft(initialAnnouncementState);
+      setStatus('Notice updated.');
+    } catch (error) {
+      setStatus(error.message || 'Unable to update notice.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const startEditingGroup = (group) => {
+    setEditingGroupId(group.id);
+    setGroupDraft({
+      name: group.name || '',
+      description: group.description || '',
+      type: group.type || 'community',
+      audience: group.audience || '',
+    });
+  };
+
+  const handleUpdateGroup = async (groupId) => {
+    setBusy(true);
+    setStatus('');
+
+    try {
+      await updateGroup(groupId, {
+        name: groupDraft.name.trim(),
+        description: groupDraft.description.trim(),
+        type: groupDraft.type || 'community',
+        audience: groupDraft.audience.trim(),
+      });
+      setEditingGroupId('');
+      setGroupDraft(initialGroupState);
+      setStatus('Group updated.');
+    } catch (error) {
+      setStatus(error.message || 'Unable to update group.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeleteGroup = async (group) => {
+    const shouldDelete = window.confirm(`Delete ${group.name}? This removes the group from VASIQ.`);
+    if (!shouldDelete) return;
+
+    setBusy(true);
+    setStatus('');
+
+    try {
+      await deleteGroup(group.id);
+      setStatus('Group deleted.');
+    } catch (error) {
+      setStatus(error.message || 'Unable to delete group.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSeededLogin = async (email) => {
+    setLoggingInSeedEmail(email);
+    setStatus('');
+
+    try {
+      await loginWithEmail({ email, password: seedPassword });
+      navigate('/feed');
+    } catch (error) {
+      setStatus(error.message || `Unable to login as ${email}. Seed the account first.`);
+    } finally {
+      setLoggingInSeedEmail('');
     }
   };
 
@@ -302,9 +413,23 @@ function AdminPage() {
         <div className="admin-clean-heading">
           <div>
             <p className="eyebrow">Overview</p>
-            <h2>Dashboard</h2>
+            <h2>Campus dashboard</h2>
           </div>
           {status ? <p className="admin-clean-status">{status}</p> : null}
+        </div>
+
+        <div className="admin-dashboard-hero">
+          <div>
+            <p className="eyebrow">Live control room</p>
+            <h3>Keep users, groups, notices, and reports moving from one place.</h3>
+            <p>
+              Seed accounts, jump into a demo user, edit notices, manage groups, and keep
+              campus signal clean without leaving this admin board.
+            </p>
+          </div>
+          <div className="admin-dashboard-orb" aria-hidden="true">
+            <ShieldCheck size={42} strokeWidth={1.9} />
+          </div>
         </div>
 
         <div className="admin-clean-metrics">
@@ -334,6 +459,33 @@ function AdminPage() {
           >
             Seed users
           </button>
+        </div>
+
+        <div className="admin-seeded-login-card">
+          <div className="admin-clean-heading admin-clean-heading-compact">
+            <div>
+              <p className="eyebrow">Seeded accounts</p>
+              <h2>Login as campus user</h2>
+            </div>
+            <span>Password: {seedPassword}</span>
+          </div>
+          <div className="admin-seeded-login-grid">
+            {seededLoginAccounts.map((account) => (
+              <button
+                key={account.email}
+                type="button"
+                className="admin-seeded-login-button"
+                onClick={() => handleSeededLogin(account.email)}
+                disabled={Boolean(loggingInSeedEmail)}
+                title={`Login as ${account.email}`}
+              >
+                <LogIn size={14} strokeWidth={2.1} aria-hidden="true" />
+                <span>
+                  {loggingInSeedEmail === account.email ? 'Logging in...' : account.label}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -380,7 +532,7 @@ function AdminPage() {
         </form>
       </section>
 
-      <section className="admin-clean-section">
+      <section id="groups" className="admin-clean-section">
         <div className="admin-clean-heading">
           <div>
             <p className="eyebrow">Groups</p>
@@ -408,19 +560,140 @@ function AdminPage() {
             rows={3}
             required
           />
+          <div className="admin-clean-form-grid">
+            <select
+              className="input elevated-input"
+              value={groupValues.type}
+              onChange={(event) =>
+                setGroupValues((current) => ({ ...current, type: event.target.value }))
+              }
+            >
+              <option value="academic">Academic</option>
+              <option value="hostel">Hostel</option>
+              <option value="career">Career</option>
+              <option value="builders">Builders</option>
+              <option value="community">Community</option>
+            </select>
+            <input
+              className="input elevated-input"
+              placeholder="Audience, e.g. 200L CSC"
+              value={groupValues.audience}
+              onChange={(event) =>
+                setGroupValues((current) => ({ ...current, audience: event.target.value }))
+              }
+            />
+          </div>
           <button type="submit" className="primary-button" disabled={busy}>
             Create group
           </button>
         </form>
 
         <div className="admin-clean-list">
-          {spotlightGroups.map((group) => (
+          {groups.map((group) => (
             <article key={group.id} className="admin-clean-row">
-              <div>
-                <strong>{group.name}</strong>
-                <p>{group.description}</p>
+              {editingGroupId === group.id ? (
+                <div className="admin-inline-editor">
+                  <input
+                    className="input elevated-input"
+                    value={groupDraft.name}
+                    onChange={(event) =>
+                      setGroupDraft((current) => ({ ...current, name: event.target.value }))
+                    }
+                  />
+                  <textarea
+                    className="input textarea elevated-input"
+                    value={groupDraft.description}
+                    onChange={(event) =>
+                      setGroupDraft((current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))
+                    }
+                    rows={3}
+                  />
+                  <div className="admin-clean-form-grid">
+                    <select
+                      className="input elevated-input"
+                      value={groupDraft.type}
+                      onChange={(event) =>
+                        setGroupDraft((current) => ({ ...current, type: event.target.value }))
+                      }
+                    >
+                      <option value="academic">Academic</option>
+                      <option value="hostel">Hostel</option>
+                      <option value="career">Career</option>
+                      <option value="builders">Builders</option>
+                      <option value="community">Community</option>
+                    </select>
+                    <input
+                      className="input elevated-input"
+                      value={groupDraft.audience}
+                      onChange={(event) =>
+                        setGroupDraft((current) => ({
+                          ...current,
+                          audience: event.target.value,
+                        }))
+                      }
+                      placeholder="Audience"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <strong>{group.name}</strong>
+                  <p>{group.description}</p>
+                  <small>
+                    {group.type || 'community'} / {group.audience || 'Campus'} /{' '}
+                    {group.members?.length || 0} members
+                  </small>
+                </div>
+              )}
+              <div className="admin-clean-row-actions">
+                {editingGroupId === group.id ? (
+                  <>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => handleUpdateGroup(group.id)}
+                      disabled={busy}
+                    >
+                      <Save size={14} strokeWidth={2.1} aria-hidden="true" />
+                      <span>Save</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => {
+                        setEditingGroupId('');
+                        setGroupDraft(initialGroupState);
+                      }}
+                    >
+                      <X size={14} strokeWidth={2.1} aria-hidden="true" />
+                      <span>Cancel</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => startEditingGroup(group)}
+                    >
+                      <Edit3 size={14} strokeWidth={2.1} aria-hidden="true" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost-button admin-danger-button"
+                      onClick={() => handleDeleteGroup(group)}
+                      disabled={busy}
+                    >
+                      <Trash2 size={14} strokeWidth={2.1} aria-hidden="true" />
+                      <span>Delete</span>
+                    </button>
+                  </>
+                )}
               </div>
-              <span>{group.members?.length || 0} members</span>
             </article>
           ))}
         </div>
@@ -477,7 +750,7 @@ function AdminPage() {
         </div>
       </section>
 
-      <section className="admin-clean-section admin-clean-section-wide">
+      <section id="safety" className="admin-clean-section admin-clean-section-wide">
         <div className="admin-clean-heading">
           <div>
             <p className="eyebrow">Safety</p>
@@ -604,7 +877,7 @@ function AdminPage() {
         </div>
       </section>
 
-      <section className="admin-clean-section">
+      <section id="posts" className="admin-clean-section">
         <div className="admin-clean-heading">
           <div>
             <p className="eyebrow">Posts</p>
@@ -645,25 +918,104 @@ function AdminPage() {
         <div className="admin-clean-list">
           {queuedAnnouncements.map((item) => (
             <article key={item.id} className="admin-clean-row">
-              <div>
-                <strong>{item.title}</strong>
-                <p>{item.message}</p>
-              </div>
+              {editingAnnouncementId === item.id ? (
+                <div className="admin-inline-editor">
+                  <input
+                    className="input elevated-input"
+                    value={announcementDraft.title}
+                    onChange={(event) =>
+                      setAnnouncementDraft((current) => ({
+                        ...current,
+                        title: event.target.value,
+                      }))
+                    }
+                    placeholder="Notice title"
+                  />
+                  <input
+                    className="input elevated-input"
+                    value={announcementDraft.tag}
+                    onChange={(event) =>
+                      setAnnouncementDraft((current) => ({
+                        ...current,
+                        tag: event.target.value,
+                      }))
+                    }
+                    placeholder="Tag"
+                  />
+                  <textarea
+                    className="input textarea elevated-input"
+                    value={announcementDraft.message}
+                    onChange={(event) =>
+                      setAnnouncementDraft((current) => ({
+                        ...current,
+                        message: event.target.value,
+                      }))
+                    }
+                    rows={3}
+                    placeholder="Notice message"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <strong>{item.title}</strong>
+                  <p>{item.message}</p>
+                  <small>
+                    {item.tag || 'Announcement'} /{' '}
+                    {item.isActive !== false ? 'Active' : 'Paused'}
+                  </small>
+                </div>
+              )}
               <div className="admin-clean-row-actions">
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => toggleAnnouncementStatus(item.id, item.isActive !== false)}
-                >
-                  {item.isActive !== false ? 'Pause' : 'Activate'}
-                </button>
-                <button
-                  type="button"
-                  className="ghost-button"
-                  onClick={() => deleteAnnouncement(item.id)}
-                >
-                  Delete
-                </button>
+                {editingAnnouncementId === item.id ? (
+                  <>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => handleUpdateAnnouncement(item.id)}
+                      disabled={busy}
+                    >
+                      <Save size={14} strokeWidth={2.1} aria-hidden="true" />
+                      <span>Save</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => {
+                        setEditingAnnouncementId('');
+                        setAnnouncementDraft(initialAnnouncementState);
+                      }}
+                    >
+                      <X size={14} strokeWidth={2.1} aria-hidden="true" />
+                      <span>Cancel</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => startEditingAnnouncement(item)}
+                    >
+                      <Edit3 size={14} strokeWidth={2.1} aria-hidden="true" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => toggleAnnouncementStatus(item.id, item.isActive !== false)}
+                    >
+                      {item.isActive !== false ? 'Pause' : 'Activate'}
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost-button admin-danger-button"
+                      onClick={() => deleteAnnouncement(item.id)}
+                    >
+                      <Trash2 size={14} strokeWidth={2.1} aria-hidden="true" />
+                      <span>Delete</span>
+                    </button>
+                  </>
+                )}
               </div>
             </article>
           ))}

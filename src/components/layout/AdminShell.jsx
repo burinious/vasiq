@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
   ArrowLeft,
+  Bell,
   LayoutDashboard,
   LogOut,
   Megaphone,
   Moon,
+  Search,
+  Settings,
   ShieldCheck,
   SunMedium,
   UsersRound,
@@ -16,8 +19,10 @@ import { getUserDisplayName, getUserInitials } from '../../utils/userIdentity';
 
 const adminSections = [
   { label: 'Overview', href: '#overview', icon: LayoutDashboard },
-  { label: 'Announcements', href: '#announcements', icon: Megaphone },
+  { label: 'Notices', href: '#announcements', icon: Megaphone },
+  { label: 'Groups', href: '#groups', icon: ShieldCheck },
   { label: 'Users', href: '#community', icon: UsersRound },
+  { label: 'Safety', href: '#safety', icon: Bell },
 ];
 
 function AdminShell() {
@@ -83,26 +88,49 @@ function AdminShell() {
 
       <main className="admin-shell-main admin-shell-main-clean">
         <header className="admin-shell-topbar admin-shell-topbar-clean">
-          <div>
+          <label className="admin-topbar-search">
+            <Search size={17} strokeWidth={2.1} aria-hidden="true" />
+            <input type="search" placeholder="Search users, groups, reports, or notices..." />
+          </label>
+
+          <div className="admin-topbar-title-block">
             <p className="eyebrow">Admin</p>
             <h1>Campus controls</h1>
           </div>
-          <button
-            type="button"
-            className="ghost-button theme-toggle-button"
-            aria-label={`Switch to ${nextTheme} mode`}
-            title={`Switch to ${nextTheme} mode`}
-            onClick={() => {
-              setTheme(nextTheme);
-              persistTheme(nextTheme);
-            }}
-          >
-            {theme === 'dark' ? (
-              <SunMedium size={16} strokeWidth={2.1} aria-hidden="true" />
-            ) : (
-              <Moon size={16} strokeWidth={2.1} aria-hidden="true" />
-            )}
-          </button>
+
+          <div className="admin-topbar-controls">
+            <button type="button" className="admin-icon-button" aria-label="Admin notifications">
+              <Bell size={17} strokeWidth={2.1} aria-hidden="true" />
+            </button>
+            <button type="button" className="admin-icon-button" aria-label="Admin settings">
+              <Settings size={17} strokeWidth={2.1} aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="admin-icon-button theme-toggle-button"
+              aria-label={`Switch to ${nextTheme} mode`}
+              title={`Switch to ${nextTheme} mode`}
+              onClick={() => {
+                setTheme(nextTheme);
+                persistTheme(nextTheme);
+              }}
+            >
+              {theme === 'dark' ? (
+                <SunMedium size={16} strokeWidth={2.1} aria-hidden="true" />
+              ) : (
+                <Moon size={16} strokeWidth={2.1} aria-hidden="true" />
+              )}
+            </button>
+            <div className="admin-topbar-profile">
+              <div>
+                <strong>{publicName}</strong>
+                <span>{profile?.role || 'Admin'}</span>
+              </div>
+              <div className="avatar avatar-sm admin-topbar-avatar">
+                {profile?.avatarUrl ? <img src={profile.avatarUrl} alt={publicName} /> : <span>{initials}</span>}
+              </div>
+            </div>
+          </div>
         </header>
 
         <Outlet />

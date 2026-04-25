@@ -4,26 +4,26 @@ import { MessageCircle, ShieldCheck, Sparkles, UsersRound, X } from 'lucide-reac
 const onboardingCards = [
   {
     title: 'Welcome to VASIQ',
-    label: 'Campus first',
-    body: 'VASIQ is your student social space for campus updates, useful posts, groups, and direct conversations.',
+    label: 'Campus pulse',
+    body: 'VASIQ is for quick campus signal: class changes, materials, hostel gist, sapa help, opportunities, events, and updates students need before they waste data elsewhere.',
     icon: Sparkles,
   },
   {
-    title: 'Join the right circles',
+    title: 'Join the right circles early',
     label: 'Groups',
-    body: 'Find department, study, project, and community groups. Some groups may need admin or moderator approval first.',
+    body: 'Start with the groups that already matter: department, hostel, study circle, builders, fellowship, opportunities, and the circles your friends actually open.',
     icon: UsersRound,
   },
   {
-    title: 'Talk safely',
-    label: 'Chats',
-    body: 'Use direct messages and group chats with respect. You can report posts, comments, replies, and unsafe activity.',
+    title: 'Keep the signal useful',
+    label: 'Updates',
+    body: 'Posts should help someone move fast: share test info, PDFs, past questions, cheap deals, transport updates, serious gist, and openings before they get buried.',
     icon: MessageCircle,
   },
   {
-    title: 'You control the noise',
+    title: 'Trust matters here',
     label: 'Safety',
-    body: 'Skip this guide to stop seeing it automatically. Help can always replay it, show FAQs, and manage account actions.',
+    body: 'Visibility is good, but trust matters. Clear profile details, verified email, reports, and blocking keep clout, jokes, and campus gist from turning unsafe.',
     icon: ShieldCheck,
   },
 ];

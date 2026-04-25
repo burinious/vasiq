@@ -18,53 +18,71 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore';
-import { db } from './config';
+import { db } from './db';
 
 const demoGroups = [
   {
     id: 'csc-100l',
     name: 'CSC 100L',
     description: 'Freshers in Computer Science sharing updates, classes, and resources.',
+    type: 'academic',
+    audience: 'Freshers and class reps',
   },
   {
     id: 'csc-200l',
     name: 'CSC 200L',
     description: 'Second-year computer science students sharing class updates and resources.',
+    type: 'academic',
+    audience: '200L Computer Science',
   },
   {
     id: 'vasiq-tech',
     name: 'VASIQ Tech',
     description: 'A practical tech community for builders, designers, and campus innovators.',
+    type: 'builders',
+    audience: 'Builders, designers, and founders',
   },
   {
     id: 'final-year',
     name: 'Final Year',
     description: 'For project talks, deadlines, internship leads, and survival tips.',
+    type: 'academic',
+    audience: 'Final-year students',
   },
   {
     id: 'campus-media',
     name: 'Campus Media',
     description: 'For photographers, media teams, social coverage, and visual storytelling.',
+    type: 'community',
+    audience: 'Media teams and creators',
   },
   {
     id: 'hostel-gist',
     name: 'Hostel Gist',
     description: 'Room updates, hostel notices, and everyday student gist.',
+    type: 'hostel',
+    audience: 'Hostel residents and off-campus students',
   },
   {
     id: 'career-lab',
     name: 'Career Lab',
     description: 'Internships, CV reviews, portfolio feedback, and career growth conversations.',
+    type: 'career',
+    audience: 'Internships, CV reviews, and growth',
   },
   {
     id: 'study-circle',
     name: 'Study Circle',
     description: 'Revision groups, note sharing, and last-minute academic rescue.',
+    type: 'academic',
+    audience: 'Revision squads and note sharing',
   },
   {
     id: 'faith-and-life',
     name: 'Faith and Life',
     description: 'Fellowship updates, encouragement, and student life reflections.',
+    type: 'community',
+    audience: 'Fellowship and community life',
   },
 ];
 
@@ -238,6 +256,17 @@ export async function createGroup(group) {
   });
 }
 
+export async function updateGroup(groupId, updates) {
+  await updateDoc(doc(db, 'groups', groupId), {
+    ...updates,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteGroup(groupId) {
+  await deleteDoc(doc(db, 'groups', groupId));
+}
+
 export async function requestGroupCreation(request) {
   await addDoc(collection(db, 'groupRequests'), {
     ...request,
@@ -304,6 +333,13 @@ export async function createAnnouncement(announcement) {
     ...announcement,
     isActive: true,
     createdAt: serverTimestamp(),
+  });
+}
+
+export async function updateAnnouncement(announcementId, updates) {
+  await updateDoc(doc(db, 'announcements', announcementId), {
+    ...updates,
+    updatedAt: serverTimestamp(),
   });
 }
 
@@ -409,6 +445,17 @@ export async function seedVasiqCampusDemo() {
 
   Array.from({ length: 18 }, (_, index) => {
     const author = vasiqSampleUsers[index];
+    const categoryCycle = [
+      'academic',
+      'materials',
+      'event',
+      'opportunity',
+      'sapa',
+      'hostel',
+      'social',
+      'academic',
+    ];
+    const category = categoryCycle[index % categoryCycle.length];
     const likedBy = [
       vasiqSampleUsers[(index + 3) % vasiqSampleUsers.length].id,
       vasiqSampleUsers[(index + 7) % vasiqSampleUsers.length].id,
@@ -434,9 +481,18 @@ export async function seedVasiqCampusDemo() {
         userId: author.id,
         authorName: author.name,
         authorDepartment: author.department,
+        authorLevel: author.level,
         authorAvatar: author.avatarUrl,
+        authorResidence: author.residence,
         content: `${demoPostOpeners[index % demoPostOpeners.length]} ${author.department.toLowerCase()} today. ${demoPostClosers[index % demoPostClosers.length]}`,
         imageUrl: '',
+        category,
+        signalLevel:
+          category === 'hostel' || category === 'sapa'
+            ? 'urgent'
+            : category === 'opportunity' || category === 'materials'
+              ? 'important'
+              : 'general',
         likes: likedBy,
         comments,
         createdAt: getDemoDate(30 - index),
@@ -578,6 +634,8 @@ export function listenToPosts(callback) {
 export async function createPost(post) {
   await addDoc(collection(db, 'posts'), {
     ...post,
+    category: post.category || 'social',
+    signalLevel: post.signalLevel || 'general',
     likes: [],
     comments: [],
     shareCount: 0,
@@ -613,7 +671,15 @@ export async function recordPostShare(postId) {
   });
 }
 
-export async function togglePostCommentLike(postId, commentIndex, userId) {
+function findCommentIndexById(comments, commentId) {
+  return comments.findIndex((comment) => comment.id === commentId);
+}
+
+function findReplyIndexById(replies, replyId) {
+  return replies.findIndex((reply) => reply.id === replyId);
+}
+
+export async function togglePostCommentLike(postId, commentId, userId) {
   await runTransaction(db, async (transaction) => {
     const postRef = doc(db, 'posts', postId);
     const snapshot = await transaction.get(postRef);
@@ -623,6 +689,7 @@ export async function togglePostCommentLike(postId, commentIndex, userId) {
     }
 
     const comments = [...(snapshot.data().comments || [])];
+    const commentIndex = findCommentIndexById(comments, commentId);
     const targetComment = comments[commentIndex];
 
     if (!targetComment) {
@@ -644,7 +711,7 @@ export async function togglePostCommentLike(postId, commentIndex, userId) {
   });
 }
 
-export async function replyToPostComment(postId, commentIndex, reply) {
+export async function replyToPostComment(postId, commentId, reply) {
   await runTransaction(db, async (transaction) => {
     const postRef = doc(db, 'posts', postId);
     const snapshot = await transaction.get(postRef);
@@ -654,6 +721,7 @@ export async function replyToPostComment(postId, commentIndex, reply) {
     }
 
     const comments = [...(snapshot.data().comments || [])];
+    const commentIndex = findCommentIndexById(comments, commentId);
     const targetComment = comments[commentIndex];
 
     if (!targetComment) {
@@ -680,7 +748,7 @@ export async function replyToPostComment(postId, commentIndex, reply) {
   });
 }
 
-export async function togglePostReplyLike(postId, commentIndex, replyIndex, userId) {
+export async function togglePostReplyLike(postId, commentId, replyId, userId) {
   await runTransaction(db, async (transaction) => {
     const postRef = doc(db, 'posts', postId);
     const snapshot = await transaction.get(postRef);
@@ -690,6 +758,7 @@ export async function togglePostReplyLike(postId, commentIndex, replyIndex, user
     }
 
     const comments = [...(snapshot.data().comments || [])];
+    const commentIndex = findCommentIndexById(comments, commentId);
     const targetComment = comments[commentIndex];
 
     if (!targetComment) {
@@ -697,6 +766,7 @@ export async function togglePostReplyLike(postId, commentIndex, replyIndex, user
     }
 
     const replies = [...(targetComment.replies || [])];
+    const replyIndex = findReplyIndexById(replies, replyId);
     const targetReply = replies[replyIndex];
 
     if (!targetReply) {

@@ -1,71 +1,89 @@
 import { doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
-import { db } from './config';
+import { db } from './db';
 
 const predefinedGroups = [
   {
     id: 'csc-100l',
     name: 'CSC 100L',
     description: 'Freshers in Computer Science sharing updates, classes, and resources.',
+    type: 'academic',
+    audience: 'Freshers and class reps',
   },
   {
     id: 'csc-200l',
     name: 'CSC 200L',
     description: 'Second-year computer science students sharing class updates and resources.',
+    type: 'academic',
+    audience: '200L Computer Science',
   },
   {
     id: 'vasiq-tech',
     name: 'VASIQ Tech',
     description: 'A practical tech community for builders, designers, and campus innovators.',
+    type: 'builders',
+    audience: 'Builders, designers, and founders',
   },
   {
     id: 'final-year',
     name: 'Final Year',
     description: 'For project talks, deadlines, internship leads, and survival tips.',
+    type: 'academic',
+    audience: 'Final-year students',
   },
   {
     id: 'campus-media',
     name: 'Campus Media',
     description: 'For photographers, media teams, social coverage, and visual storytelling.',
+    type: 'community',
+    audience: 'Media teams and creators',
   },
   {
     id: 'hostel-gist',
     name: 'Hostel Gist',
     description: 'Room updates, hostel notices, and everyday student gist.',
+    type: 'hostel',
+    audience: 'Hostel residents and off-campus students',
   },
   {
     id: 'career-lab',
     name: 'Career Lab',
     description: 'Internships, CV reviews, portfolio feedback, and career growth conversations.',
+    type: 'career',
+    audience: 'Internships, CV reviews, and growth',
   },
   {
     id: 'study-circle',
     name: 'Study Circle',
     description: 'Revision groups, note sharing, and last-minute academic rescue.',
+    type: 'academic',
+    audience: 'Revision squads and note sharing',
   },
   {
     id: 'faith-and-life',
     name: 'Faith and Life',
     description: 'Fellowship updates, encouragement, and student life reflections.',
+    type: 'community',
+    audience: 'Fellowship and community life',
   },
 ];
 
 const defaultAnnouncements = [
   {
     id: 'welcome-week',
-    title: 'Welcome to varsiq',
-    message: 'Freshers and returning students can now join VASIQ communities, share updates, and message classmates in one space.',
+    title: 'Campus pulse is live',
+    message: 'Use VASIQ for the updates students actually need: class shifts, hostel notices, events, and opportunities.',
     tag: 'Announcement',
   },
   {
     id: 'project-defense',
     title: 'Final Year Alert',
-    message: 'Project defense rehearsals start next week. Use the Final Year group to coordinate mock sessions and slides review.',
+    message: 'Project defense rehearsals start next week. Use the Final Year group to coordinate mock sessions, slides review, and deadline gist.',
     tag: 'Academic',
   },
   {
     id: 'tech-week',
     title: 'VASIQ Tech Week',
-    message: 'Hack sessions, design critiques, and founder chats will be pinned here by campus admins.',
+    message: 'Hack sessions, design critiques, founder chats, and build-night updates will be pinned here first.',
     tag: 'Event',
   },
 ];

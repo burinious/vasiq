@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Film, ImagePlus, SendHorizontal } from 'lucide-react';
 import { uploadImage } from '../../firebase/cloudinary';
+import { POST_CATEGORIES, SIGNAL_LEVELS } from '../../lib/campusSignal';
 import { getUserDisplayName, getUserFirstName } from '../../utils/userIdentity';
 import GifPicker from './GifPicker';
 
 function PostComposer({ onSubmit, busy, profile }) {
   const [content, setContent] = useState('');
+  const [category, setCategory] = useState('academic');
+  const [signalLevel, setSignalLevel] = useState('general');
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [selectedGif, setSelectedGif] = useState(null);
@@ -36,6 +39,8 @@ function PostComposer({ onSubmit, busy, profile }) {
 
   const resetComposer = (previewUrl = preview, revokePreview = true) => {
     setContent('');
+    setCategory('academic');
+    setSignalLevel('general');
     setFile(null);
     setSelectedGif(null);
     if (revokePreview && previewUrl) {
@@ -51,6 +56,8 @@ function PostComposer({ onSubmit, busy, profile }) {
     event.preventDefault();
     setError('');
     const contentSnapshot = content;
+    const categorySnapshot = category;
+    const signalLevelSnapshot = signalLevel;
     const fileSnapshot = file;
     const previewSnapshot = preview;
     const gifSnapshot = selectedGif;
@@ -70,12 +77,16 @@ function PostComposer({ onSubmit, busy, profile }) {
         content: contentSnapshot.trim(),
         imageUrl,
         mediaType,
+        category: categorySnapshot,
+        signalLevel: signalLevelSnapshot,
       });
       if (previewSnapshot) {
         URL.revokeObjectURL(previewSnapshot);
       }
     } catch (submitError) {
       setContent(contentSnapshot);
+      setCategory(categorySnapshot);
+      setSignalLevel(signalLevelSnapshot);
       setFile(fileSnapshot);
       setPreview(previewSnapshot);
       setSelectedGif(gifSnapshot);
@@ -106,17 +117,54 @@ function PostComposer({ onSubmit, busy, profile }) {
           </div>
           <div className="composer-identity">
             <strong>{publicName}</strong>
-            <span>Post a useful campus update, flyer, project moment, or quick gist.</span>
+            <span>Drop classes, materials, sapa tips, opportunities, or campus gist.</span>
           </div>
           <span className="composer-audience-pill">Campus pulse</span>
         </div>
 
         <div className="composer-main">
+          <div className="composer-signal-grid">
+            <div className="composer-signal-field">
+              <span className="composer-signal-label">Update type</span>
+              <div className="composer-category-row" role="list" aria-label="Post category">
+                {POST_CATEGORIES.map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    role="listitem"
+                    className={`composer-category-chip ${
+                      category === item.value ? 'composer-category-chip-active' : ''
+                    }`}
+                    onClick={() => setCategory(item.value)}
+                    title={item.description}
+                  >
+                    {item.shortLabel}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="composer-signal-field">
+              <span className="composer-signal-label">Signal level</span>
+              <select
+                className="input composer-select"
+                value={signalLevel}
+                onChange={(event) => setSignalLevel(event.target.value)}
+              >
+                {SIGNAL_LEVELS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
           <textarea
             className="input textarea composer-textarea"
             value={content}
             onChange={(event) => setContent(event.target.value)}
-            placeholder={`What's happening on campus, ${firstName}?`}
+            placeholder={`What's the update, ${firstName}? Keep it short and useful.`}
             rows={4}
           />
 
@@ -145,7 +193,7 @@ function PostComposer({ onSubmit, busy, profile }) {
               onClick={() => setGifPickerOpen(true)}
             >
               <Film size={15} strokeWidth={2.2} aria-hidden="true" />
-              <span>{selectedGif ? 'Change Klipy GIF' : 'Klipy GIF'}</span>
+              <span>{selectedGif ? 'Change GIF' : 'GIF'}</span>
             </button>
           </div>
 
@@ -189,7 +237,7 @@ function PostComposer({ onSubmit, busy, profile }) {
           <div className="form-actions composer-actions">
             <div className="composer-hint">
               <span className="composer-dot" />
-              <span>Keep it campus-safe and useful.</span>
+              <span>Low data friendly: text first, media only when it adds value.</span>
             </div>
             <button
               type="submit"
