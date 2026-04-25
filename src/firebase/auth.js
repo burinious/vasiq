@@ -12,7 +12,7 @@ import {
 } from 'firebase/auth';
 import { auth, authPersistenceReady } from './config';
 import { assertEmailNotDeleted, createUserProfile, markAccountDeleted } from './firestore';
-import { isAdminEmail } from '../utils/admin';
+import { isAdminEmail, isSeededDemoEmail } from '../utils/admin';
 import { getFallbackNameFromEmail } from '../utils/userIdentity';
 
 export function getReadableAuthError(error) {
@@ -97,11 +97,13 @@ export async function loginWithEmail({ email, password }) {
   const normalizedEmail = email.trim().toLowerCase();
   const credential = await signInWithEmailAndPassword(auth, normalizedEmail, password);
 
-  try {
-    await assertEmailNotDeleted(normalizedEmail);
-  } catch (error) {
-    await signOut(auth).catch(() => {});
-    throw error;
+  if (!isSeededDemoEmail(normalizedEmail)) {
+    try {
+      await assertEmailNotDeleted(normalizedEmail);
+    } catch (error) {
+      await signOut(auth).catch(() => {});
+      throw error;
+    }
   }
 
   return credential.user;

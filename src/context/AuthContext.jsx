@@ -40,6 +40,7 @@ export function AuthProvider({ children }) {
           return;
         }
 
+        const isSeededDemo = isSeededDemoEmail(user.email);
         const shouldSeedAnnouncements = isAdminEmail(user.email);
         const loadingTimeout = window.setTimeout(() => {
           if (currentRunId === authRunId) {
@@ -68,7 +69,7 @@ export function AuthProvider({ children }) {
               }
 
               window.clearTimeout(loadingTimeout);
-              if (nextProfile?.accountDeleted) {
+              if (nextProfile?.accountDeleted && !isSeededDemo) {
                 firebaseSignOut(auth);
                 setProfile(null);
                 setLoading(false);
@@ -76,7 +77,6 @@ export function AuthProvider({ children }) {
               }
 
               const fallbackName = getFallbackNameFromEmail(user.email);
-              const isSeededDemo = isSeededDemoEmail(user.email);
               const profileUpdates = {};
 
               if (shouldSeedAnnouncements && nextProfile?.role !== 'admin') {
@@ -89,6 +89,10 @@ export function AuthProvider({ children }) {
 
               if (isSeededDemo && nextProfile?.isDemoAccount !== true) {
                 profileUpdates.isDemoAccount = true;
+              }
+
+              if (isSeededDemo && nextProfile?.accountDeleted === true) {
+                profileUpdates.accountDeleted = false;
               }
 
               if (Object.keys(profileUpdates).length) {
