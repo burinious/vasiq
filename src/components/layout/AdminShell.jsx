@@ -23,11 +23,15 @@ const adminSections = [
   { label: 'Groups', href: '#groups', icon: ShieldCheck },
   { label: 'Users', href: '#community', icon: UsersRound },
   { label: 'Safety', href: '#safety', icon: Bell },
+  { label: 'Posts', href: '#posts', icon: LayoutDashboard },
 ];
 
 function AdminShell() {
   const { currentUser, profile, signOut } = useAuth();
   const [theme, setTheme] = useState(resolveThemePreference);
+  const [activeHash, setActiveHash] = useState(() =>
+    typeof window === 'undefined' ? '#overview' : window.location.hash || '#overview'
+  );
   const adminIdentity = { ...profile, email: currentUser?.email };
   const publicName = getUserDisplayName(adminIdentity, 'Admin user');
   const initials = getUserInitials(adminIdentity, 'AD');
@@ -36,6 +40,29 @@ function AdminShell() {
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    const syncHash = () => {
+      setActiveHash(window.location.hash || '#overview');
+    };
+
+    window.addEventListener('hashchange', syncHash);
+    syncHash();
+
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, []);
+
+  const handleSectionClick = (event, href) => {
+    event.preventDefault();
+    setActiveHash(href);
+
+    if (typeof window === 'undefined') return;
+
+    if (window.location.hash !== href) {
+      window.history.replaceState(null, '', href);
+    }
+    window.dispatchEvent(new Event('hashchange'));
+  };
 
   return (
     <div className="admin-shell admin-shell-clean">
@@ -52,7 +79,14 @@ function AdminShell() {
 
         <nav className="admin-shell-nav">
           {adminSections.map((item) => (
-            <a key={item.href} href={item.href} className="admin-shell-link">
+            <a
+              key={item.href}
+              href={item.href}
+              className={`admin-shell-link ${
+                activeHash === item.href ? 'admin-shell-link-active' : ''
+              }`}
+              onClick={(event) => handleSectionClick(event, item.href)}
+            >
               <item.icon size={17} strokeWidth={2.1} aria-hidden="true" />
               <span>{item.label}</span>
             </a>

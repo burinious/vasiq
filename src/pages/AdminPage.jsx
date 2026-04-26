@@ -35,6 +35,29 @@ const initialGroupState = {
   audience: '',
 };
 
+const adminPanelByHash = {
+  '#overview': 'notices',
+  '#announcements': 'notices',
+  '#groups': 'groups',
+  '#community': 'users',
+  '#users': 'users',
+  '#safety': 'safety',
+  '#posts': 'posts',
+};
+
+const adminHashByPanel = {
+  notices: '#announcements',
+  groups: '#groups',
+  safety: '#safety',
+  users: '#community',
+  posts: '#posts',
+};
+
+function getInitialAdminPanel() {
+  if (typeof window === 'undefined') return 'notices';
+  return adminPanelByHash[window.location.hash] || 'notices';
+}
+
 function formatTimestamp(timestamp) {
   if (!timestamp) return 'Just now';
   if (typeof timestamp?.toDate === 'function') {
@@ -66,6 +89,7 @@ function AdminPage() {
   const [announcementDraft, setAnnouncementDraft] = useState(initialAnnouncementState);
   const [editingGroupId, setEditingGroupId] = useState('');
   const [groupDraft, setGroupDraft] = useState(initialGroupState);
+  const [activePanel, setActivePanel] = useState(getInitialAdminPanel);
 
   useEffect(() => {
     const unsubscribeUsers = listenToUsers(setUsers);
@@ -83,6 +107,17 @@ function AdminPage() {
       unsubscribeReports();
       unsubscribeAnnouncements();
     };
+  }, []);
+
+  useEffect(() => {
+    const syncPanelFromHash = () => {
+      setActivePanel(getInitialAdminPanel());
+    };
+
+    window.addEventListener('hashchange', syncPanelFromHash);
+    syncPanelFromHash();
+
+    return () => window.removeEventListener('hashchange', syncPanelFromHash);
   }, []);
 
   const activeAnnouncementsCount = announcements.filter((item) => item.isActive !== false).length;
@@ -120,6 +155,24 @@ function AdminPage() {
   const recentPosts = useMemo(() => posts.slice(0, 5), [posts]);
   const recentReports = useMemo(() => reports.slice(0, 8), [reports]);
   const queuedAnnouncements = useMemo(() => announcements.slice(0, 6), [announcements]);
+  const adminPanels = [
+    { value: 'notices', label: 'Notices', count: activeAnnouncementsCount },
+    { value: 'groups', label: 'Groups', count: pendingGroupRequests.length },
+    { value: 'safety', label: 'Safety', count: pendingReports.length },
+    { value: 'users', label: 'Users', count: filteredUsers.length },
+    { value: 'posts', label: 'Posts', count: recentPosts.length },
+  ];
+
+  const handlePanelSelect = (panel) => {
+    setActivePanel(panel);
+
+    if (typeof window === 'undefined') return;
+
+    const nextHash = adminHashByPanel[panel] || '#overview';
+    if (window.location.hash !== nextHash) {
+      window.history.replaceState(null, '', nextHash);
+    }
+  };
 
   const handleReviewGroupRequest = async (request, nextStatus) => {
     setReviewingRequestId(request.id);
@@ -364,32 +417,51 @@ function AdminPage() {
           {status ? <p className="admin-clean-status">{status}</p> : null}
         </div>
 
-        <div className="admin-dashboard-hero">
-          <div>
-            <p className="eyebrow">Live control room</p>
-            <h3>Keep users, groups, notices, and reports moving from one place.</h3>
-            <p>
-              Edit notices, manage groups, review reports, and keep campus signal clean
-              without leaving this admin board.
-            </p>
+        <div className="admin-dashboard-overview-grid">
+          <div className="admin-dashboard-hero">
+            <div>
+              <p className="eyebrow">Live control room</p>
+              <h3>Keep users, groups, notices, and reports moving from one place.</h3>
+              <p>
+                Edit notices, manage groups, review reports, and keep campus signal clean
+                without leaving this admin board.
+              </p>
+            </div>
+            <div className="admin-dashboard-orb" aria-hidden="true">
+              <ShieldCheck size={42} strokeWidth={1.9} />
+            </div>
           </div>
-          <div className="admin-dashboard-orb" aria-hidden="true">
-            <ShieldCheck size={42} strokeWidth={1.9} />
+
+          <div className="admin-clean-metrics">
+            {metrics.map((metric) => (
+              <article key={metric.label} className="admin-clean-metric">
+                <metric.icon size={18} strokeWidth={2.1} aria-hidden="true" />
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+              </article>
+            ))}
           </div>
         </div>
 
-        <div className="admin-clean-metrics">
-          {metrics.map((metric) => (
-            <article key={metric.label} className="admin-clean-metric">
-              <metric.icon size={18} strokeWidth={2.1} aria-hidden="true" />
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-            </article>
+        <div className="admin-panel-tabs" aria-label="Admin workspace sections">
+          {adminPanels.map((panel) => (
+            <button
+              key={panel.value}
+              type="button"
+              className={`admin-panel-tab ${
+                activePanel === panel.value ? 'admin-panel-tab-active' : ''
+              }`}
+              onClick={() => handlePanelSelect(panel.value)}
+            >
+              <span>{panel.label}</span>
+              <strong>{panel.count}</strong>
+            </button>
           ))}
         </div>
-
       </section>
 
+      {activePanel === 'notices' ? (
+      <>
       <section id="announcements" className="admin-clean-section">
         <div className="admin-clean-heading">
           <div>
@@ -433,6 +505,125 @@ function AdminPage() {
         </form>
       </section>
 
+      <section className="admin-clean-section">
+        <div className="admin-clean-heading">
+          <div>
+            <p className="eyebrow">Queue</p>
+            <h2>Notices</h2>
+          </div>
+        </div>
+
+        <div className="admin-clean-list admin-scroll-list">
+          {queuedAnnouncements.map((item) => (
+            <article key={item.id} className="admin-clean-row">
+              {editingAnnouncementId === item.id ? (
+                <div className="admin-inline-editor">
+                  <input
+                    className="input elevated-input"
+                    value={announcementDraft.title}
+                    onChange={(event) =>
+                      setAnnouncementDraft((current) => ({
+                        ...current,
+                        title: event.target.value,
+                      }))
+                    }
+                    placeholder="Notice title"
+                  />
+                  <input
+                    className="input elevated-input"
+                    value={announcementDraft.tag}
+                    onChange={(event) =>
+                      setAnnouncementDraft((current) => ({
+                        ...current,
+                        tag: event.target.value,
+                      }))
+                    }
+                    placeholder="Tag"
+                  />
+                  <textarea
+                    className="input textarea elevated-input"
+                    value={announcementDraft.message}
+                    onChange={(event) =>
+                      setAnnouncementDraft((current) => ({
+                        ...current,
+                        message: event.target.value,
+                      }))
+                    }
+                    rows={3}
+                    placeholder="Notice message"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <strong>{item.title}</strong>
+                  <p>{item.message}</p>
+                  <small>
+                    {item.tag || 'Announcement'} /{' '}
+                    {item.isActive !== false ? 'Active' : 'Paused'}
+                  </small>
+                </div>
+              )}
+              <div className="admin-clean-row-actions">
+                {editingAnnouncementId === item.id ? (
+                  <>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => handleUpdateAnnouncement(item.id)}
+                      disabled={busy}
+                    >
+                      <Save size={14} strokeWidth={2.1} aria-hidden="true" />
+                      <span>Save</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => {
+                        setEditingAnnouncementId('');
+                        setAnnouncementDraft(initialAnnouncementState);
+                      }}
+                    >
+                      <X size={14} strokeWidth={2.1} aria-hidden="true" />
+                      <span>Cancel</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => startEditingAnnouncement(item)}
+                    >
+                      <Edit3 size={14} strokeWidth={2.1} aria-hidden="true" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-button"
+                      onClick={() => toggleAnnouncementStatus(item.id, item.isActive !== false)}
+                    >
+                      {item.isActive !== false ? 'Pause' : 'Activate'}
+                    </button>
+                    <button
+                      type="button"
+                      className="ghost-button admin-danger-button"
+                      onClick={() => deleteAnnouncement(item.id)}
+                    >
+                      <Trash2 size={14} strokeWidth={2.1} aria-hidden="true" />
+                      <span>Delete</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+      </>
+      ) : null}
+
+      {activePanel === 'groups' ? (
+      <>
       <section id="groups" className="admin-clean-section">
         <div className="admin-clean-heading">
           <div>
@@ -650,7 +841,11 @@ function AdminPage() {
           )}
         </div>
       </section>
+      </>
+      ) : null}
 
+      {activePanel === 'safety' ? (
+      <>
       <section id="safety" className="admin-clean-section admin-clean-section-wide">
         <div className="admin-clean-heading">
           <div>
@@ -723,6 +918,39 @@ function AdminPage() {
         </div>
       </section>
 
+      <section id="posts" className="admin-clean-section admin-clean-section-wide">
+        <div className="admin-clean-heading">
+          <div>
+            <p className="eyebrow">Posts</p>
+            <h2>Moderation</h2>
+          </div>
+        </div>
+
+        <div className="admin-clean-list admin-scroll-list">
+          {recentPosts.map((post) => (
+            <article key={post.id} className="admin-clean-row admin-clean-post-row">
+              <div>
+                <strong>{post.authorDisplayName || post.authorName || 'Student'}</strong>
+                <p>{post.content || 'No post text'}</p>
+                <small>{formatTimestamp(post.createdAt)}</small>
+              </div>
+              <button
+                type="button"
+                className="ghost-button admin-danger-button"
+                onClick={() => handleDeletePost(post)}
+                disabled={deletingPostId === post.id}
+              >
+                <Trash2 size={14} strokeWidth={2.1} aria-hidden="true" />
+                <span>{deletingPostId === post.id ? 'Removing...' : 'Remove'}</span>
+              </button>
+            </article>
+          ))}
+        </div>
+      </section>
+      </>
+      ) : null}
+
+      {activePanel === 'users' ? (
       <section id="community" className="admin-clean-section admin-clean-section-wide">
         <div className="admin-clean-heading">
           <div>
@@ -751,7 +979,7 @@ function AdminPage() {
           </select>
         </div>
 
-        <div className="admin-clean-list">
+        <div className="admin-clean-list admin-scroll-list">
           {filteredUsers.map((user) => {
             const displayName = user.displayName || user.fullName || user.name || 'Student';
             const currentRole = user.role || 'member';
@@ -777,8 +1005,10 @@ function AdminPage() {
           })}
         </div>
       </section>
+      ) : null}
 
-      <section id="posts" className="admin-clean-section">
+      {activePanel === 'posts' ? (
+      <section id="posts" className="admin-clean-section admin-clean-section-wide">
         <div className="admin-clean-heading">
           <div>
             <p className="eyebrow">Posts</p>
@@ -786,7 +1016,7 @@ function AdminPage() {
           </div>
         </div>
 
-        <div className="admin-clean-list">
+        <div className="admin-clean-list admin-scroll-list">
           {recentPosts.map((post) => (
             <article key={post.id} className="admin-clean-row admin-clean-post-row">
               <div>
@@ -807,121 +1037,7 @@ function AdminPage() {
           ))}
         </div>
       </section>
-
-      <section className="admin-clean-section">
-        <div className="admin-clean-heading">
-          <div>
-            <p className="eyebrow">Queue</p>
-            <h2>Notices</h2>
-          </div>
-        </div>
-
-        <div className="admin-clean-list">
-          {queuedAnnouncements.map((item) => (
-            <article key={item.id} className="admin-clean-row">
-              {editingAnnouncementId === item.id ? (
-                <div className="admin-inline-editor">
-                  <input
-                    className="input elevated-input"
-                    value={announcementDraft.title}
-                    onChange={(event) =>
-                      setAnnouncementDraft((current) => ({
-                        ...current,
-                        title: event.target.value,
-                      }))
-                    }
-                    placeholder="Notice title"
-                  />
-                  <input
-                    className="input elevated-input"
-                    value={announcementDraft.tag}
-                    onChange={(event) =>
-                      setAnnouncementDraft((current) => ({
-                        ...current,
-                        tag: event.target.value,
-                      }))
-                    }
-                    placeholder="Tag"
-                  />
-                  <textarea
-                    className="input textarea elevated-input"
-                    value={announcementDraft.message}
-                    onChange={(event) =>
-                      setAnnouncementDraft((current) => ({
-                        ...current,
-                        message: event.target.value,
-                      }))
-                    }
-                    rows={3}
-                    placeholder="Notice message"
-                  />
-                </div>
-              ) : (
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.message}</p>
-                  <small>
-                    {item.tag || 'Announcement'} /{' '}
-                    {item.isActive !== false ? 'Active' : 'Paused'}
-                  </small>
-                </div>
-              )}
-              <div className="admin-clean-row-actions">
-                {editingAnnouncementId === item.id ? (
-                  <>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => handleUpdateAnnouncement(item.id)}
-                      disabled={busy}
-                    >
-                      <Save size={14} strokeWidth={2.1} aria-hidden="true" />
-                      <span>Save</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="ghost-button"
-                      onClick={() => {
-                        setEditingAnnouncementId('');
-                        setAnnouncementDraft(initialAnnouncementState);
-                      }}
-                    >
-                      <X size={14} strokeWidth={2.1} aria-hidden="true" />
-                      <span>Cancel</span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => startEditingAnnouncement(item)}
-                    >
-                      <Edit3 size={14} strokeWidth={2.1} aria-hidden="true" />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() => toggleAnnouncementStatus(item.id, item.isActive !== false)}
-                    >
-                      {item.isActive !== false ? 'Pause' : 'Activate'}
-                    </button>
-                    <button
-                      type="button"
-                      className="ghost-button admin-danger-button"
-                      onClick={() => deleteAnnouncement(item.id)}
-                    >
-                      <Trash2 size={14} strokeWidth={2.1} aria-hidden="true" />
-                      <span>Delete</span>
-                    </button>
-                  </>
-                )}
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+      ) : null}
     </div>
   );
 }

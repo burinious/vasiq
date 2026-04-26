@@ -7334,7 +7334,7 @@ textarea:focus {
 
 .admin-shell-clean {
   min-height: 100vh;
-  grid-template-columns: 256px minmax(0, 1fr);
+  grid-template-columns: 232px minmax(0, 1fr);
   gap: 0;
   padding: 0;
   background:
@@ -7346,23 +7346,23 @@ textarea:focus {
 .admin-shell-clean .admin-sidebar {
   top: 0;
   left: 0;
-  width: 256px;
+  width: 232px;
   height: 100vh;
-  gap: 18px;
-  padding: 20px 16px;
+  gap: 14px;
+  padding: 16px 12px 14px;
   border-radius: 0;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)),
     #ffffff;
   border-right: 1px solid rgba(148, 163, 184, 0.22);
-  box-shadow: 18px 0 46px rgba(15, 23, 42, 0.075);
+  box-shadow: 10px 0 28px rgba(15, 23, 42, 0.055);
   backdrop-filter: blur(18px);
 }
 
 .admin-shell-clean .admin-brand-mark {
-  width: 44px;
-  height: 44px;
-  border-radius: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
   background:
     radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.34), transparent 34%),
     linear-gradient(135deg, #0f766e, #0284c7);
@@ -7381,8 +7381,8 @@ textarea:focus {
 .admin-shell-clean .admin-shell-link,
 .admin-shell-clean .admin-back-link,
 .admin-shell-clean .admin-shell-logout {
-  min-height: 44px;
-  border-radius: 14px;
+  min-height: 40px;
+  border-radius: 12px;
   background: transparent;
   color: #64748b;
 }
@@ -7395,10 +7395,18 @@ textarea:focus {
   color: #0f766e;
 }
 
+.admin-shell-clean .admin-shell-link-active {
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.14), rgba(2, 132, 199, 0.1)),
+    #f8fafc;
+  color: #0f766e;
+  box-shadow: inset 3px 0 0 #0f766e, 0 12px 24px rgba(15, 118, 110, 0.08);
+}
+
 .admin-sidebar-card-clean {
   margin-top: auto;
-  padding: 16px;
-  border-radius: 20px;
+  padding: 12px;
+  border-radius: 16px;
   background:
     radial-gradient(circle at 100% 0%, rgba(14, 165, 233, 0.14), transparent 42%),
     linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(255, 255, 255, 0.9));
@@ -7415,8 +7423,8 @@ textarea:focus {
 }
 
 .admin-shell-main-clean {
-  gap: 24px;
-  padding: 18px 34px 36px;
+  gap: 14px;
+  padding: 12px 16px 18px;
   margin-left: 0;
   max-width: none;
   width: 100%;
@@ -7426,9 +7434,9 @@ textarea:focus {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) auto auto;
   align-items: center;
-  gap: 18px;
-  min-height: 72px;
-  padding: 10px 0 18px;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 0 8px;
   border-radius: 0;
   background: transparent;
   border: 0;
@@ -7439,9 +7447,9 @@ textarea:focus {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 46px;
-  padding: 0 16px;
-  border-radius: 16px;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.86);
   border: 1px solid rgba(148, 163, 184, 0.2);
   color: #64748b;
@@ -7465,7 +7473,7 @@ textarea:focus {
 .admin-topbar-controls {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .admin-icon-button {
@@ -7473,7 +7481,7 @@ textarea:focus {
   place-items: center;
   width: 42px;
   height: 42px;
-  border-radius: 15px;
+  border-radius: 13px;
   background: rgba(255, 255, 255, 0.9);
   color: #64748b;
   border: 1px solid rgba(148, 163, 184, 0.22);
@@ -7488,8 +7496,8 @@ textarea:focus {
 .admin-topbar-profile {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding-left: 14px;
+  gap: 10px;
+  padding-left: 12px;
   border-left: 1px solid #e2e8f0;
 }
 
@@ -7518,7 +7526,8 @@ textarea:focus {
 .admin-clean-page {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 22px;
+  gap: 14px;
+  align-content: start;
 }
 
 .admin-dashboard-hero {
@@ -7528,14 +7537,14 @@ textarea:focus {
   gap: 18px;
   position: relative;
   overflow: hidden;
-  padding: 28px;
-  border-radius: 26px;
+  padding: 20px 22px;
+  border-radius: 20px;
   background:
     radial-gradient(circle at 86% 8%, rgba(34, 211, 238, 0.38), transparent 28%),
     radial-gradient(circle at 0% 100%, rgba(15, 118, 110, 0.22), transparent 32%),
     linear-gradient(135deg, #0f172a 0%, #0f766e 48%, #0284c7 100%);
   border: 1px solid rgba(255, 255, 255, 0.38);
-  box-shadow: 0 28px 70px rgba(15, 118, 110, 0.22);
+  box-shadow: 0 18px 42px rgba(15, 118, 110, 0.18);
 }
 
 .admin-dashboard-hero::after {
@@ -7554,8 +7563,8 @@ textarea:focus {
   margin: 4px 0 8px;
   color: #ffffff;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(1.55rem, 2.8vw, 2.4rem);
-  line-height: 1.02;
+  font-size: clamp(1.35rem, 2vw, 1.9rem);
+  line-height: 1.06;
   letter-spacing: -0.05em;
 }
 
@@ -7576,7 +7585,7 @@ textarea:focus {
   height: 92px;
   position: relative;
   z-index: 1;
-  border-radius: 30px;
+  border-radius: 24px;
   background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.28);
@@ -7586,13 +7595,13 @@ textarea:focus {
 
 .admin-clean-section {
   display: grid;
-  gap: 16px;
+  gap: 12px;
   grid-column: span 6;
-  padding: 24px;
-  border-radius: 22px;
+  padding: 16px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.065);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
   backdrop-filter: blur(18px);
 }
 
@@ -7604,6 +7613,17 @@ textarea:focus {
   grid-column: 1 / -1;
 }
 
+.admin-clean-page > #overview.admin-clean-section {
+  gap: 12px;
+}
+
+.admin-dashboard-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(360px, 1.2fr) minmax(420px, 0.8fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
 .admin-clean-page > #announcements,
 .admin-clean-page > #groups {
   grid-column: span 6;
@@ -7611,6 +7631,55 @@ textarea:focus {
 
 .admin-clean-page > #community {
   grid-column: 1 / -1;
+}
+
+.admin-panel-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.admin-panel-tab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: transparent;
+  color: #64748b;
+  border: 0;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.admin-panel-tab strong {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #0f766e;
+  font-size: 0.76rem;
+}
+
+.admin-panel-tab-active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.admin-scroll-list {
+  max-height: min(38vh, 360px);
+  overflow-y: auto;
+  padding-right: 3px;
 }
 
 .admin-clean-heading {
@@ -7644,16 +7713,21 @@ textarea:focus {
 
 .admin-clean-metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-content: stretch;
+}
+
+.admin-clean-metric:first-child {
+  grid-row: span 2;
 }
 
 .admin-clean-metric {
   display: grid;
-  gap: 12px;
-  min-height: 148px;
-  padding: 22px;
-  border-radius: 20px;
+  gap: 8px;
+  min-height: 104px;
+  padding: 14px;
+  border-radius: 16px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92));
   border: 1px solid rgba(148, 163, 184, 0.18);
   box-shadow: 0 18px 40px rgba(15, 23, 42, 0.065);
@@ -7668,10 +7742,10 @@ textarea:focus {
 
 .admin-clean-metric svg {
   color: #0f766e;
-  padding: 9px;
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
+  padding: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
   background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(2, 132, 199, 0.1));
 }
 
@@ -7686,7 +7760,7 @@ textarea:focus {
 .admin-clean-metric strong {
   color: #0f172a;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.9rem;
+  font-size: 1.55rem;
 }
 
 .admin-clean-actions,
@@ -7698,14 +7772,14 @@ textarea:focus {
 
 .admin-clean-form-grid {
   display: grid;
-  grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: minmax(0, 160px) minmax(0, 1fr);
+  gap: 10px;
 }
 
 .admin-clean-form,
 .admin-clean-toolbar {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .admin-clean-toolbar {
@@ -7718,16 +7792,16 @@ textarea:focus {
 
 .admin-clean-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .admin-clean-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 16px;
-  border-radius: 18px;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
   background: rgba(248, 250, 252, 0.82);
   border: 1px solid rgba(148, 163, 184, 0.16);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
@@ -7823,6 +7897,14 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 
+  .admin-panel-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-dashboard-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
   .admin-clean-section,
   .admin-clean-page > #announcements,
   .admin-clean-page > #groups {
@@ -7830,11 +7912,31 @@ textarea:focus {
   }
 
   .admin-clean-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-clean-metric:first-child {
+    grid-row: auto;
   }
 }
 
 @media (max-width: 760px) {
+  .admin-panel-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-clean-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-dashboard-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dashboard-orb {
+    display: none;
+  }
+
   .onboarding-modal-backdrop {
     align-items: end;
     padding: 12px;
