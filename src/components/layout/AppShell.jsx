@@ -11,6 +11,7 @@ import {
   MessagesSquare,
   Moon,
   Search,
+  ShieldCheck,
   Sparkles,
   SunMedium,
   UsersRound,
@@ -89,7 +90,7 @@ const routeMeta = {
 };
 
 function AppShell() {
-  const { currentUser, profile, signOut } = useAuth();
+  const { currentUser, isAdmin, profile, signOut } = useAuth();
   const location = useLocation();
   const [theme, setTheme] = useState(resolveThemePreference);
   const [dataSaver, setDataSaver] = useState(() => {
@@ -117,6 +118,16 @@ function AppShell() {
   }).format(new Date());
   const nextTheme = theme === 'dark' ? 'light' : 'dark';
   const isMobileMenuRoute = ['/profile', '/help'].includes(location.pathname);
+  const sidebarNavigationItems = isAdmin
+    ? [
+        ...navigationItems,
+        {
+          label: 'Admin',
+          path: '/admin',
+          icon: ShieldCheck,
+        },
+      ]
+    : navigationItems;
 
   const handleToggleTheme = () => {
     setTheme(nextTheme);
@@ -227,7 +238,7 @@ function AppShell() {
             <p className="sidebar-section-title">Menu</p>
           </div>
           <nav className="sidebar-nav">
-            {navigationItems.map((item) => (
+            {sidebarNavigationItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
