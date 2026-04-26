@@ -19,8 +19,6 @@ varsiq is a React + Vite student community web app powered by Firebase and Cloud
 ## Launch Ops
 
 - Full launch checklist: [LAUNCH_CHECKLIST.md](./LAUNCH_CHECKLIST.md)
-- Batch-seed demo accounts: `node scripts/seedLaunchData.mjs --accounts-only --from=1 --to=5 --delay=1500`
-- Verify seeded demo accounts: `node scripts/verifyDemoAccounts.mjs`
 
 ## Firebase Collections
 

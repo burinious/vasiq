@@ -24,32 +24,14 @@
 - Report a post/comment/reply and confirm it appears in `/admin`.
 - Check mobile navigation, onboarding, help/support, privacy policy, and terms.
 
-## 4. Demo Accounts
-
-- Seed accounts in small batches to avoid Firebase anti-abuse throttling:
-  - `node scripts/seedLaunchData.mjs --accounts-only --from=1 --to=5 --delay=1500`
-  - `node scripts/seedLaunchData.mjs --accounts-only --from=6 --to=10 --delay=1500`
-  - `node scripts/seedLaunchData.mjs --accounts-only --from=11 --to=15 --delay=1500`
-  - `node scripts/seedLaunchData.mjs --accounts-only --from=16 --to=20 --delay=1500`
-- Verify which accounts are live:
-  - `node scripts/verifyDemoAccounts.mjs`
-- Shared password for seeded demo accounts:
-  - `VasiqDemo#2026`
-
-## 5. Seed Activity
-
-- After the accounts exist, run the full data seeder:
-  - `node scripts/seedLaunchData.mjs`
-- If you only want to confirm account creation first, stay on `--accounts-only`.
-
-## 6. Final Review
+## 4. Final Review
 
 - Check `/feed`, `/groups`, `/chat`, `/profile`, `/help`, and `/admin`.
 - Confirm no native browser prompt is still used for report or share flows.
 - Confirm the mobile bottom bar stays fixed and the menu sheet contains profile/help/theme.
 - Confirm the announcement bar and top shell stay fixed without feed content bleeding behind them.
 
-## 7. Live Links
+## 5. Live Links
 
 - Hosting: `https://varsiq-beec0.web.app`
 - GitHub: `https://github.com/burinious/vasiq`

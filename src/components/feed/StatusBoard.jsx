@@ -166,7 +166,7 @@ function StatusBoard({ onCreateStory, profile, stories, storiesReady, users }) {
           <div className="story-insight-tags">
             <span>{featuredStory.department || 'Campus'}</span>
             <span>{featuredStory.level || 'Story'}</span>
-            <span>{featuredStory.isLiveStory ? '24h' : 'seeded'}</span>
+            <span>{featuredStory.isLiveStory ? '24h' : 'profile'}</span>
           </div>
         </article>
 

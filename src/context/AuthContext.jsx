@@ -2,8 +2,7 @@ import { onAuthStateChanged, reload, signOut as firebaseSignOut } from 'firebase
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { auth, authPersistenceReady, firebaseReady } from '../firebase/config';
 import { listenToUserProfile, updateUserProfile } from '../firebase/firestore';
-import { ensurePredefinedGroups } from '../firebase/seed';
-import { isAdminEmail, isAdminUser, isSeededDemoEmail } from '../utils/admin';
+import { isAdminEmail, isAdminUser } from '../utils/admin';
 import { getFallbackNameFromEmail } from '../utils/userIdentity';
 
 const AuthContext = createContext(null);
@@ -40,8 +39,7 @@ export function AuthProvider({ children }) {
           return;
         }
 
-        const isSeededDemo = isSeededDemoEmail(user.email);
-        const shouldSeedAnnouncements = isAdminEmail(user.email);
+        const shouldPromoteAdmin = isAdminEmail(user.email);
         const loadingTimeout = window.setTimeout(() => {
           if (currentRunId === authRunId) {
             setLoading(false);
@@ -49,18 +47,6 @@ export function AuthProvider({ children }) {
         }, 7000);
 
         try {
-          // Do not block app startup on Firestore bootstrap writes.
-          ensurePredefinedGroups({ includeAnnouncements: shouldSeedAnnouncements }).catch((error) => {
-            if (currentRunId !== authRunId) {
-              return;
-            }
-
-            console.error('Unable to seed predefined groups.', error);
-            setBootstrapError(
-              error?.message || 'Unable to reach Firestore. Check your Firebase setup.',
-            );
-          });
-
           unsubscribeProfile = listenToUserProfile(
             user.uid,
             (nextProfile) => {
@@ -72,20 +58,12 @@ export function AuthProvider({ children }) {
               const fallbackName = getFallbackNameFromEmail(user.email);
               const profileUpdates = {};
 
-              if (shouldSeedAnnouncements && nextProfile?.role !== 'admin') {
+              if (shouldPromoteAdmin && nextProfile?.role !== 'admin') {
                 profileUpdates.role = 'admin';
               }
 
               if (!nextProfile?.name?.trim()) {
                 profileUpdates.name = fallbackName;
-              }
-
-              if (isSeededDemo && nextProfile?.isDemoAccount !== true) {
-                profileUpdates.isDemoAccount = true;
-              }
-
-              if (isSeededDemo && nextProfile?.accountDeleted === true) {
-                profileUpdates.accountDeleted = false;
               }
 
               if (Object.keys(profileUpdates).length) {
@@ -100,8 +78,7 @@ export function AuthProvider({ children }) {
                       id: user.uid,
                       email: user.email,
                       name: fallbackName,
-                      isDemoAccount: isSeededDemo,
-                      role: shouldSeedAnnouncements ? 'admin' : 'member',
+                      role: shouldPromoteAdmin ? 'admin' : 'member',
                     },
               );
               setLoading(false);

@@ -3278,20 +3278,6 @@ img {
   backdrop-filter: blur(12px);
 }
 
-.prompt-seed-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.seed-chip {
-  padding: 9px 12px;
-  border-radius: 999px;
-  background: rgba(15, 118, 110, 0.08);
-  color: var(--brand-deep);
-  font-weight: 700;
-}
-
 .composer-hint {
   display: inline-flex;
   align-items: center;
@@ -7352,8 +7338,9 @@ textarea:focus {
   gap: 0;
   padding: 0;
   background:
-    radial-gradient(circle at 92% 8%, rgba(14, 165, 233, 0.08), transparent 28%),
-    #f6f8fb;
+    radial-gradient(circle at 86% 4%, rgba(14, 165, 233, 0.16), transparent 30%),
+    radial-gradient(circle at 30% 0%, rgba(15, 118, 110, 0.12), transparent 26%),
+    linear-gradient(135deg, #f8fbff 0%, #eef6f5 48%, #f7fafc 100%);
 }
 
 .admin-shell-clean .admin-sidebar {
@@ -7362,19 +7349,25 @@ textarea:focus {
   width: 256px;
   height: 100vh;
   gap: 18px;
-  padding: 18px 16px;
+  padding: 20px 16px;
   border-radius: 0;
-  background: #ffffff;
-  border-right: 1px solid #e5e7eb;
-  box-shadow: 10px 0 32px rgba(15, 23, 42, 0.035);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94)),
+    #ffffff;
+  border-right: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 18px 0 46px rgba(15, 23, 42, 0.075);
+  backdrop-filter: blur(18px);
 }
 
 .admin-shell-clean .admin-brand-mark {
   width: 44px;
   height: 44px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #0f766e, #0284c7);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.34), transparent 34%),
+    linear-gradient(135deg, #0f766e, #0284c7);
   color: #ffffff;
+  box-shadow: 0 16px 30px rgba(15, 118, 110, 0.26);
 }
 
 .admin-shell-clean .admin-brand strong {
@@ -7389,7 +7382,7 @@ textarea:focus {
 .admin-shell-clean .admin-back-link,
 .admin-shell-clean .admin-shell-logout {
   min-height: 44px;
-  border-radius: 12px;
+  border-radius: 14px;
   background: transparent;
   color: #64748b;
 }
@@ -7398,16 +7391,19 @@ textarea:focus {
 .admin-shell-clean .admin-back-link:hover,
 .admin-shell-clean .admin-shell-logout:hover {
   transform: none;
-  background: rgba(15, 118, 110, 0.08);
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.1), rgba(2, 132, 199, 0.08));
   color: #0f766e;
 }
 
 .admin-sidebar-card-clean {
   margin-top: auto;
-  padding: 14px;
-  border-radius: 18px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  padding: 16px;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(14, 165, 233, 0.14), transparent 42%),
+    linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(255, 255, 255, 0.9));
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.06);
 }
 
 .admin-shell-clean .admin-sidebar-user strong {
@@ -7420,7 +7416,7 @@ textarea:focus {
 
 .admin-shell-main-clean {
   gap: 24px;
-  padding: 16px 32px 32px;
+  padding: 18px 34px 36px;
   margin-left: 0;
   max-width: none;
   width: 100%;
@@ -7445,11 +7441,12 @@ textarea:focus {
   gap: 12px;
   min-height: 46px;
   padding: 0 16px;
-  border-radius: 14px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   color: #64748b;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.035);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(16px);
 }
 
 .admin-topbar-search input {
@@ -7476,10 +7473,11 @@ textarea:focus {
   place-items: center;
   width: 42px;
   height: 42px;
-  border-radius: 14px;
-  background: #ffffff;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.9);
   color: #64748b;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.055);
 }
 
 .admin-icon-button:hover {
@@ -7528,17 +7526,33 @@ textarea:focus {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 18px;
-  padding: 24px;
-  border-radius: 18px;
+  position: relative;
+  overflow: hidden;
+  padding: 28px;
+  border-radius: 26px;
   background:
-    radial-gradient(circle at 100% 0%, rgba(14, 165, 233, 0.16), transparent 34%),
-    linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(255, 255, 255, 0.96));
-  border: 1px solid rgba(15, 118, 110, 0.14);
+    radial-gradient(circle at 86% 8%, rgba(34, 211, 238, 0.38), transparent 28%),
+    radial-gradient(circle at 0% 100%, rgba(15, 118, 110, 0.22), transparent 32%),
+    linear-gradient(135deg, #0f172a 0%, #0f766e 48%, #0284c7 100%);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow: 0 28px 70px rgba(15, 118, 110, 0.22);
+}
+
+.admin-dashboard-hero::after {
+  content: '';
+  position: absolute;
+  inset: auto 18px 18px auto;
+  width: 180px;
+  height: 180px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  filter: blur(4px);
+  pointer-events: none;
 }
 
 .admin-dashboard-hero h3 {
   margin: 4px 0 8px;
-  color: #0f172a;
+  color: #ffffff;
   font-family: 'Space Grotesk', sans-serif;
   font-size: clamp(1.55rem, 2.8vw, 2.4rem);
   line-height: 1.02;
@@ -7548,7 +7562,11 @@ textarea:focus {
 .admin-dashboard-hero p:last-child {
   margin: 0;
   max-width: 68ch;
-  color: #475569;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.admin-dashboard-hero .eyebrow {
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .admin-dashboard-orb {
@@ -7556,21 +7574,26 @@ textarea:focus {
   place-items: center;
   width: 92px;
   height: 92px;
-  border-radius: 28px;
-  background: linear-gradient(135deg, #0f766e, #0284c7);
+  position: relative;
+  z-index: 1;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
-  box-shadow: 0 22px 42px rgba(15, 118, 110, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 24px 48px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(14px);
 }
 
 .admin-clean-section {
   display: grid;
   gap: 16px;
   grid-column: span 6;
-  padding: 22px;
-  border-radius: 16px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.045);
+  padding: 24px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.065);
+  backdrop-filter: blur(18px);
 }
 
 .admin-clean-section-wide {
@@ -7630,10 +7653,17 @@ textarea:focus {
   gap: 12px;
   min-height: 148px;
   padding: 22px;
-  border-radius: 16px;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.04);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92));
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.065);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.admin-clean-metric:hover {
+  transform: translateY(-2px);
+  border-color: rgba(15, 118, 110, 0.2);
+  box-shadow: 0 24px 52px rgba(15, 118, 110, 0.12);
 }
 
 .admin-clean-metric svg {
@@ -7641,8 +7671,8 @@ textarea:focus {
   padding: 9px;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
-  background: rgba(15, 118, 110, 0.08);
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(2, 132, 199, 0.1));
 }
 
 .admin-clean-metric span {
@@ -7672,42 +7702,6 @@ textarea:focus {
   gap: 12px;
 }
 
-.admin-seeded-login-card {
-  display: grid;
-  gap: 14px;
-  padding: 16px;
-  border-radius: 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-}
-
-.admin-seeded-login-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-  max-height: 220px;
-  overflow-y: auto;
-  gap: 10px;
-  padding-right: 4px;
-}
-
-.admin-seeded-login-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 12px;
-  border-radius: 14px;
-  background: rgba(15, 118, 110, 0.08);
-  color: #0f766e;
-  border: 1px solid rgba(15, 118, 110, 0.14);
-  font-weight: 900;
-}
-
-.admin-seeded-login-button:hover {
-  background: rgba(15, 118, 110, 0.14);
-}
-
 .admin-clean-form,
 .admin-clean-toolbar {
   display: grid;
@@ -7732,10 +7726,11 @@ textarea:focus {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 14px;
-  border-radius: 14px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.82);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 .admin-clean-row-actions .secondary-button,
@@ -7954,7 +7949,6 @@ textarea:focus {
 :root[data-theme='dark'] .admin-shell-topbar-clean,
 :root[data-theme='dark'] .admin-clean-section,
 :root[data-theme='dark'] .admin-dashboard-hero,
-:root[data-theme='dark'] .admin-seeded-login-card,
 :root[data-theme='dark'] .admin-topbar-search,
 :root[data-theme='dark'] .admin-icon-button,
 :root[data-theme='dark'] .admin-sidebar-card-clean {
@@ -7965,8 +7959,7 @@ textarea:focus {
 :root[data-theme='dark'] .admin-clean-metric,
 :root[data-theme='dark'] .admin-clean-row,
 :root[data-theme='dark'] .admin-clean-heading span,
-:root[data-theme='dark'] .admin-clean-status,
-:root[data-theme='dark'] .admin-seeded-login-button {
+:root[data-theme='dark'] .admin-clean-status {
   background: #111c2f;
   border-color: rgba(71, 85, 105, 0.5);
 }

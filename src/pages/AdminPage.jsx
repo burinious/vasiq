@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Activity, Edit3, Flag, LogIn, Megaphone, Save, ShieldCheck, Trash2, UsersRound, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Activity, Edit3, Flag, Megaphone, Save, ShieldCheck, Trash2, UsersRound, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { loginWithEmail } from '../firebase/auth';
 import {
   approveGroupRequest,
   createAnnouncement,
@@ -17,8 +15,6 @@ import {
   listenToPosts,
   listenToReports,
   listenToUsers,
-  seedVasiqCampusDemo,
-  seedVasiqSampleUsers,
   toggleAnnouncementStatus,
   updateAnnouncement,
   updateGroup,
@@ -39,12 +35,6 @@ const initialGroupState = {
   audience: '',
 };
 
-const seedPassword = 'VasiqDemo#2026';
-const seededLoginAccounts = Array.from({ length: 50 }, (_, index) => ({
-  email: `vuser${String(index + 1).padStart(2, '0')}@vasiq.app`,
-  label: `vuser${String(index + 1).padStart(2, '0')}`,
-}));
-
 function formatTimestamp(timestamp) {
   if (!timestamp) return 'Just now';
   if (typeof timestamp?.toDate === 'function') {
@@ -56,7 +46,6 @@ function formatTimestamp(timestamp) {
 
 function AdminPage() {
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [groups, setGroups] = useState([]);
   const [groupRequests, setGroupRequests] = useState([]);
@@ -77,7 +66,6 @@ function AdminPage() {
   const [announcementDraft, setAnnouncementDraft] = useState(initialAnnouncementState);
   const [editingGroupId, setEditingGroupId] = useState('');
   const [groupDraft, setGroupDraft] = useState(initialGroupState);
-  const [loggingInSeedEmail, setLoggingInSeedEmail] = useState('');
 
   useEffect(() => {
     const unsubscribeUsers = listenToUsers(setUsers);
@@ -169,34 +157,6 @@ function AdminPage() {
       setStatus(error.message || 'Unable to update user role.');
     } finally {
       setUpdatingUserId('');
-    }
-  };
-
-  const handleSeedUsers = async () => {
-    setBusy(true);
-    setStatus('');
-
-    try {
-      await seedVasiqSampleUsers();
-      setStatus('Added sample profiles.');
-    } catch (error) {
-      setStatus(error.message || 'Unable to seed sample profiles.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleSeedCampusDemo = async () => {
-    setBusy(true);
-    setStatus('');
-
-    try {
-      await seedVasiqCampusDemo();
-      setStatus('Seeded demo campus data.');
-    } catch (error) {
-      setStatus(error.message || 'Unable to seed demo data.');
-    } finally {
-      setBusy(false);
     }
   };
 
@@ -323,20 +283,6 @@ function AdminPage() {
     }
   };
 
-  const handleSeededLogin = async (email) => {
-    setLoggingInSeedEmail(email);
-    setStatus('');
-
-    try {
-      await loginWithEmail({ email, password: seedPassword });
-      navigate('/feed');
-    } catch (error) {
-      setStatus(error.message || `Unable to login as ${email}. Seed the account first.`);
-    } finally {
-      setLoggingInSeedEmail('');
-    }
-  };
-
   const handleDeletePost = async (post) => {
     const shouldDelete = window.confirm(
       `Remove this post by ${post.authorDisplayName || post.authorName || 'Student'}?`,
@@ -423,8 +369,8 @@ function AdminPage() {
             <p className="eyebrow">Live control room</p>
             <h3>Keep users, groups, notices, and reports moving from one place.</h3>
             <p>
-              Seed accounts, jump into a demo user, edit notices, manage groups, and keep
-              campus signal clean without leaving this admin board.
+              Edit notices, manage groups, review reports, and keep campus signal clean
+              without leaving this admin board.
             </p>
           </div>
           <div className="admin-dashboard-orb" aria-hidden="true">
@@ -442,51 +388,6 @@ function AdminPage() {
           ))}
         </div>
 
-        <div className="admin-clean-actions">
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={handleSeedCampusDemo}
-            disabled={busy}
-          >
-            Seed demo data
-          </button>
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={handleSeedUsers}
-            disabled={busy}
-          >
-            Seed users
-          </button>
-        </div>
-
-        <div className="admin-seeded-login-card">
-          <div className="admin-clean-heading admin-clean-heading-compact">
-            <div>
-              <p className="eyebrow">Seeded accounts</p>
-              <h2>Login as campus user</h2>
-            </div>
-            <span>Password: {seedPassword}</span>
-          </div>
-          <div className="admin-seeded-login-grid">
-            {seededLoginAccounts.map((account) => (
-              <button
-                key={account.email}
-                type="button"
-                className="admin-seeded-login-button"
-                onClick={() => handleSeededLogin(account.email)}
-                disabled={Boolean(loggingInSeedEmail)}
-                title={`Login as ${account.email}`}
-              >
-                <LogIn size={14} strokeWidth={2.1} aria-hidden="true" />
-                <span>
-                  {loggingInSeedEmail === account.email ? 'Logging in...' : account.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
       </section>
 
       <section id="announcements" className="admin-clean-section">

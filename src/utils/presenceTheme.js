@@ -22,14 +22,14 @@ const interestEmojiMap = {
   'business strategy': '📈',
 };
 
-function getSeedIndex(seed) {
-  return [...(seed || 'varsiq')]
+function getThemeIndex(value) {
+  return [...(value || 'varsiq')]
     .reduce((total, char) => total + char.charCodeAt(0), 0) % gradients.length;
 }
 
 export function getPresenceTheme(user) {
-  const seedIndex = getSeedIndex(getUserDisplayName(user, user?.email || user?.id));
-  const [start, end] = gradients[seedIndex];
+  const themeIndex = getThemeIndex(getUserDisplayName(user, user?.email || user?.id));
+  const [start, end] = gradients[themeIndex];
   const primaryInterest = user?.interests?.[0];
 
   return {
