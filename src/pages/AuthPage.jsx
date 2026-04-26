@@ -7,7 +7,6 @@ import {
   loginWithEmail,
   registerWithEmail,
 } from '../firebase/auth';
-import { isSeededDemoEmail } from '../utils/admin';
 
 const initialRegisterState = {
   email: '',
@@ -52,7 +51,7 @@ function getPasswordValidationError(password, { strict = false } = {}) {
 
 function AuthPage() {
   const location = useLocation();
-  const { currentUser, loading, profile } = useAuth();
+  const { currentUser, loading } = useAuth();
   const [mode, setMode] = useState('login');
   const [loginValues, setLoginValues] = useState({ email: '', password: '' });
   const [registerValues, setRegisterValues] = useState(initialRegisterState);
@@ -69,12 +68,8 @@ function AuthPage() {
     return <Loader />;
   }
 
-  if (currentUser?.emailVerified || profile?.isDemoAccount || isSeededDemoEmail(currentUser?.email)) {
+  if (currentUser) {
     return <Navigate to={redirectTo} replace />;
-  }
-
-  if (currentUser && !currentUser.emailVerified && !isSeededDemoEmail(currentUser.email)) {
-    return <Navigate to="/verify-email" replace />;
   }
 
   const handleLogin = async (event) => {

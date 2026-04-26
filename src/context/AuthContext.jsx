@@ -69,13 +69,6 @@ export function AuthProvider({ children }) {
               }
 
               window.clearTimeout(loadingTimeout);
-              if (nextProfile?.accountDeleted && !isSeededDemo) {
-                firebaseSignOut(auth);
-                setProfile(null);
-                setLoading(false);
-                return;
-              }
-
               const fallbackName = getFallbackNameFromEmail(user.email);
               const profileUpdates = {};
 
