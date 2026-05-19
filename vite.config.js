@@ -9,41 +9,6 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'build',
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) {
-            return undefined;
-          }
-
-          if (id.includes('firebase/auth') || id.includes('@firebase/auth')) {
-            return 'firebase-auth';
-          }
-
-          if (id.includes('firebase/firestore') || id.includes('@firebase/firestore')) {
-            return 'firebase-firestore';
-          }
-
-          if (id.includes('firebase/app') || id.includes('@firebase/app')) {
-            return 'firebase-app';
-          }
-
-          if (id.includes('firebase') || id.includes('@firebase')) {
-            return 'firebase-vendor';
-          }
-
-          if (id.includes('react-router') || id.includes('@remix-run/router')) {
-            return 'router-vendor';
-          }
-
-          if (id.includes('react') || id.includes('scheduler')) {
-            return 'react-vendor';
-          }
-
-          return 'vendor';
-        },
-      },
-    },
   },
   resolve: {
     alias: {
