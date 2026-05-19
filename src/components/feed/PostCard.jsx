@@ -1,8 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Flag, Heart, MessageCircle, Reply, Share2, ShieldOff, Sparkles } from 'lucide-react';
+import {
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Divider,
+  InputAdornment,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { optimizeCloudinaryImage } from '../../firebase/cloudinary';
 import { listenToPostComments } from '../../firebase/firestore';
 import { getPostCategoryMeta, getSignalLevelMeta } from '../../lib/campusSignal';
+import { glassCardSx, primaryButtonSx, softInputSx } from '../../styles/premiumTheme';
 
 function formatTimestamp(timestamp) {
   if (!timestamp) return 'Just now';
@@ -31,7 +46,6 @@ function PostCard({
   const [comment, setComment] = useState('');
   const [replyTarget, setReplyTarget] = useState(null);
   const [liveComments, setLiveComments] = useState([]);
-  const hasImage = Boolean(post.imageUrl);
   const authorName = post.authorDisplayName || post.authorName || 'Student';
   const categoryMeta = getPostCategoryMeta(
     post.category || (post.signalLevel === 'urgent' ? 'urgent' : 'social'),
@@ -71,7 +85,13 @@ function PostCard({
     .map((item) => ({
       ...item,
       likes: item.likes || [],
-      replies: item.replies || [],
+      replies: (item.replies || []).map((replyItem, replyIndex) => ({
+        ...replyItem,
+        id:
+          replyItem.id ||
+          (item.isLegacy ? `legacy-index-${replyIndex}` : ''),
+        likes: replyItem.likes || [],
+      })),
     }))
     .reverse();
 
@@ -98,221 +118,336 @@ function PostCard({
   };
 
   return (
-    <article className={`panel post-card ${hasImage ? 'post-card-media' : ''}`}>
-      <div className="post-header">
-        <div className="post-author-cluster">
-          <div className="avatar avatar-sm">
-            {post.authorAvatar ? (
-              <img
-                src={optimizeCloudinaryImage(
-                  post.authorAvatar,
-                  'f_auto,q_auto,c_fill,w_160,h_160',
-                )}
-                alt={authorName}
-              />
-            ) : (
-              <span>{authorName?.[0] || 'V'}</span>
-            )}
-          </div>
-          <div>
-            <div className="post-author-line">
-              <h3>{authorName}</h3>
-              <span className="post-author-badge">
-                <Sparkles size={12} strokeWidth={2.2} aria-hidden="true" />
-                <span>Campus</span>
-              </span>
-              <span className={`post-category-pill post-category-pill-${categoryMeta.value}`}>
-                {categoryMeta.label}
-              </span>
-              {signalMeta.value !== 'general' ? (
-                <span className={`post-signal-pill post-signal-pill-${signalMeta.value}`}>
-                  {signalMeta.label}
-                </span>
-              ) : null}
-            </div>
-            <p>
-              {post.authorDepartment || 'Campus community'}
-              {post.authorLevel ? ` / ${post.authorLevel}` : ''}
-            </p>
-            <span className="post-time">
-              {formatTimestamp(post.createdAt)}
-              {post.authorResidence ? ` - ${post.authorResidence}` : ' - Campus circle'}
-            </span>
-          </div>
-        </div>
-        <div className="post-safety-actions">
-          <button type="button" onClick={onReportPost} aria-label="Report post">
-            <Flag size={14} strokeWidth={2.2} aria-hidden="true" />
-            <span>Report</span>
-          </button>
-          {post.userId && post.userId !== currentUserId ? (
-            <button type="button" onClick={onBlockAuthor} aria-label="Block post author">
-              <ShieldOff size={14} strokeWidth={2.2} aria-hidden="true" />
-              <span>Block</span>
-            </button>
-          ) : null}
-        </div>
-      </div>
-
-      <p className="post-copy">{post.content}</p>
-
-      {post.imageUrl ? (
-        <img
-          className="post-image"
-          src={optimizeCloudinaryImage(post.imageUrl)}
-          alt="Post attachment"
-        />
-      ) : null}
-
-      <div className="post-actions post-actions-compact">
-        <button
-          type="button"
-          className={`action-pill action-counter-pill ${isLiked ? 'action-pill-active' : ''}`}
-          onClick={onLike}
-          aria-label={`Love post, ${likeCount} reactions`}
-        >
-          <Heart size={18} strokeWidth={2.2} aria-hidden="true" />
-          <sup>{likeCount}</sup>
-        </button>
-        <button
-          type="button"
-          className="action-pill action-counter-pill"
-          aria-label={`${commentCount} comments`}
-        >
-          <MessageCircle size={18} strokeWidth={2.2} aria-hidden="true" />
-          <sup>{commentCount}</sup>
-        </button>
-        <button
-          type="button"
-          className="action-pill action-counter-pill"
-          aria-label={`${shareCount} shares`}
-          onClick={onShare}
-        >
-          <Share2 size={18} strokeWidth={2.2} aria-hidden="true" />
-          <sup>{shareCount}</sup>
-        </button>
-      </div>
-
-      <form className="comment-form" onSubmit={handleSubmitComment}>
-        <div className="comment-input-shell">
-          {replyTarget ? (
-            <div className="comment-replying-pill">
-              <span>Replying to {replyTarget.name}</span>
-              <button type="button" onClick={() => setReplyTarget(null)}>
-                Cancel
-              </button>
-            </div>
-          ) : null}
-          <input
-            className="input"
-            value={comment}
-            onChange={(event) => setComment(event.target.value)}
-            placeholder={replyTarget ? `Reply to ${replyTarget.name}` : 'Reply to this post'}
-          />
-        </div>
-        <button type="submit" className="secondary-button">
-          Reply
-        </button>
-      </form>
-
-      {commentCount ? (
-        <div className="comment-list">
-          {visibleComments.map((item) => {
-            const commentLikes = item.likes.length;
-            const isCommentLiked = item.likes.includes(currentUserId);
-
-            return (
-              <div key={item.id || `${item.userId}-${item.createdAt}`} className="comment-item">
-                <strong>{item.userName}</strong>
-                <p>{item.text}</p>
-                <div className="comment-actions">
-                  <button
-                    type="button"
-                    className={isCommentLiked ? 'comment-action-active' : ''}
-                    onClick={() => onCommentLike(item.id)}
-                  >
-                    <Heart size={13} strokeWidth={2.2} aria-hidden="true" />
-                    <span>{commentLikes ? commentLikes : 'Like'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setReplyTarget({
-                        commentId: item.id,
-                        name: item.userName || 'comment',
-                        parentReplyId: '',
-                        parentReplyName: '',
-                      })
-                    }
-                  >
-                    <Reply size={13} strokeWidth={2.2} aria-hidden="true" />
-                    <span>Reply</span>
-                  </button>
-                  <button type="button" onClick={() => onReportComment(item)}>
-                    <Flag size={13} strokeWidth={2.2} aria-hidden="true" />
-                    <span>Report</span>
-                  </button>
-                </div>
-                {item.replies.length ? (
-                  <div className="comment-replies">
-                    {item.replies.map((replyItem, replyIndex) => {
-                      const replyLikes = replyItem.likes || [];
-                      const isReplyLiked = replyLikes.includes(currentUserId);
-
-                      return (
-                        <div
-                          key={replyItem.id || `${replyItem.userId}-${replyItem.createdAt}-${replyIndex}`}
-                          className="comment-reply-item"
-                        >
-                          <strong>{replyItem.userName}</strong>
-                          <p>
-                            {replyItem.parentReplyName ? (
-                              <span>@{replyItem.parentReplyName} </span>
-                            ) : null}
-                            {replyItem.text}
-                          </p>
-                          <div className="comment-actions">
-                            <button
-                              type="button"
-                              className={isReplyLiked ? 'comment-action-active' : ''}
-                              onClick={() => onReplyLike(item.id, replyItem.id)}
-                            >
-                              <Heart size={13} strokeWidth={2.2} aria-hidden="true" />
-                              <span>{replyLikes.length ? replyLikes.length : 'Like'}</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setReplyTarget({
-                                  commentId: item.id,
-                                  name: replyItem.userName || 'reply',
-                                  parentReplyId: replyItem.id,
-                                  parentReplyName: replyItem.userName || 'reply',
-                                })
-                              }
-                            >
-                              <Reply size={13} strokeWidth={2.2} aria-hidden="true" />
-                              <span>Reply</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => onReportReply(item, replyItem, replyIndex)}
-                            >
-                              <Flag size={13} strokeWidth={2.2} aria-hidden="true" />
-                              <span>Report</span>
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+    <Card
+      component="article"
+      sx={{
+        ...glassCardSx,
+        overflow: 'hidden',
+        transition: 'transform 180ms ease, box-shadow 180ms ease',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: '0 28px 90px rgba(15,23,42,0.14)',
+        },
+      }}
+    >
+      <CardContent sx={{ p: { xs: 2.5, sm: 3, md: 3.4 } }}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" spacing={2}>
+          <Stack direction="row" spacing={1.7} alignItems="flex-start" sx={{ minWidth: 0 }}>
+            <Avatar
+              src={
+                post.authorAvatar
+                  ? optimizeCloudinaryImage(post.authorAvatar, 'f_auto,q_auto,c_fill,w_160,h_160')
+                  : ''
+              }
+              alt={authorName}
+              sx={{
+                width: 50,
+                height: 50,
+                bgcolor: 'rgba(15,118,110,0.12)',
+                color: '#0f766e',
+                fontWeight: 950,
+                border: '2px solid rgba(255,255,255,0.82)',
+                boxShadow: '0 12px 30px rgba(15,23,42,0.12)',
+              }}
+            >
+              {authorName?.[0] || 'V'}
+            </Avatar>
+            <Box sx={{ minWidth: 0 }}>
+              <Stack direction="row" spacing={0.8} alignItems="center" flexWrap="wrap" useFlexGap>
+                <Typography variant="h6" sx={{ fontWeight: 950, color: '#0f172a', lineHeight: 1.1 }}>
+                  {authorName}
+                </Typography>
+                <Chip
+                  size="small"
+                  icon={<Sparkles size={12} strokeWidth={2.2} />}
+                  label="Campus"
+                  sx={{
+                    borderRadius: 999,
+                    fontWeight: 900,
+                    bgcolor: 'rgba(15,118,110,0.1)',
+                    color: '#0f766e',
+                  }}
+                />
+                <Chip size="small" label={categoryMeta.label} sx={{ borderRadius: 999, fontWeight: 900 }} />
+                {signalMeta.value !== 'general' ? (
+                  <Chip
+                    size="small"
+                    color={signalMeta.value === 'urgent' ? 'error' : 'warning'}
+                    label={signalMeta.label}
+                    sx={{ borderRadius: 999, fontWeight: 900 }}
+                  />
                 ) : null}
-              </div>
-            );
-          })}
-        </div>
-      ) : null}
-    </article>
+              </Stack>
+              <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
+                {post.authorUniversity ? `${post.authorUniversity} / ` : ''}
+                {post.authorDepartment || 'Campus community'}
+                {post.authorLevel ? ` / ${post.authorLevel}` : ''}
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 800 }}>
+                {formatTimestamp(post.createdAt)}
+                {post.authorResidence ? ` / ${post.authorResidence}` : ' / Campus circle'}
+              </Typography>
+            </Box>
+          </Stack>
+
+          <Stack direction="row" spacing={1} sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}>
+            <Button
+              type="button"
+              onClick={onReportPost}
+              size="small"
+              startIcon={<Flag size={14} strokeWidth={2.2} />}
+              sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900, color: '#64748b' }}
+            >
+              Report
+            </Button>
+            {post.userId && post.userId !== currentUserId ? (
+              <Button
+                type="button"
+                onClick={onBlockAuthor}
+                size="small"
+                startIcon={<ShieldOff size={14} strokeWidth={2.2} />}
+                sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900, color: '#b91c1c' }}
+              >
+                Block
+              </Button>
+            ) : null}
+          </Stack>
+        </Stack>
+
+        {post.content ? (
+          <Typography
+            sx={{
+              mt: 2.4,
+              color: '#1e293b',
+              fontSize: '1rem',
+              lineHeight: 1.7,
+              whiteSpace: 'pre-wrap',
+            }}
+          >
+            {post.content}
+          </Typography>
+        ) : null}
+
+        {post.imageUrl ? (
+          <Box
+            component="img"
+            src={optimizeCloudinaryImage(post.imageUrl)}
+            alt="Post attachment"
+            sx={{
+              width: '100%',
+              maxHeight: { xs: 360, md: 520 },
+              objectFit: 'cover',
+              mt: 2,
+              borderRadius: 4,
+              border: '1px solid rgba(148,163,184,0.18)',
+            }}
+          />
+        ) : null}
+
+        <Stack direction="row" spacing={1} mt={2.4} flexWrap="wrap" useFlexGap>
+          <Button
+            type="button"
+            onClick={onLike}
+            size="small"
+            aria-label={`Love post, ${likeCount} reactions`}
+            startIcon={<Heart size={18} strokeWidth={2.2} fill={isLiked ? 'currentColor' : 'none'} />}
+            variant={isLiked ? 'contained' : 'outlined'}
+            sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900 }}
+          >
+            {likeCount}
+          </Button>
+          <Button
+            type="button"
+            aria-label={`${commentCount} comments`}
+            size="small"
+            startIcon={<MessageCircle size={18} strokeWidth={2.2} />}
+            variant="outlined"
+            sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900 }}
+          >
+            {commentCount}
+          </Button>
+          <Button
+            type="button"
+            aria-label={`${shareCount} shares`}
+            onClick={onShare}
+            size="small"
+            startIcon={<Share2 size={18} strokeWidth={2.2} />}
+            variant="outlined"
+            sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900 }}
+          >
+            {shareCount}
+          </Button>
+        </Stack>
+
+        <Box component="form" onSubmit={handleSubmitComment} sx={{ mt: 2.4 }}>
+          {replyTarget ? (
+            <Chip
+              label={`Replying to ${replyTarget.name}`}
+              onDelete={() => setReplyTarget(null)}
+              sx={{ mb: 1, borderRadius: 999, fontWeight: 900 }}
+            />
+          ) : null}
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            <TextField
+              fullWidth
+              size="small"
+              value={comment}
+              onChange={(event) => setComment(event.target.value)}
+              placeholder={replyTarget ? `Reply to ${replyTarget.name}` : 'Reply to this post'}
+              sx={softInputSx}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <MessageCircle size={17} strokeWidth={2.2} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Button type="submit" variant="contained" size="small" sx={{ ...primaryButtonSx, py: 0.9 }}>
+              Reply
+            </Button>
+          </Stack>
+        </Box>
+
+        {commentCount ? (
+          <Stack spacing={1.5} mt={2.4}>
+            {visibleComments.map((item) => {
+              const commentLikes = item.likes.length;
+              const isCommentLiked = item.likes.includes(currentUserId);
+
+              return (
+                <Paper
+                  key={item.id || `${item.userId}-${item.createdAt}`}
+                  elevation={0}
+                  sx={{
+                    p: 1.6,
+                    borderRadius: 4,
+                    bgcolor: 'rgba(255,255,255,0.68)',
+                    border: '1px solid rgba(148,163,184,0.18)',
+                  }}
+                >
+                  <Stack spacing={0.8}>
+                    <Box>
+                      <Typography sx={{ fontWeight: 950, color: '#0f172a' }}>{item.userName}</Typography>
+                      <Typography variant="body2" sx={{ color: '#475569', whiteSpace: 'pre-wrap' }}>
+                        {item.text}
+                      </Typography>
+                    </Box>
+                    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                      <Button
+                        size="small"
+                        type="button"
+                        onClick={() => onCommentLike(item.id)}
+                        startIcon={<Heart size={13} strokeWidth={2.2} fill={isCommentLiked ? 'currentColor' : 'none'} />}
+                        sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900 }}
+                      >
+                        {commentLikes || 'Like'}
+                      </Button>
+                      <Button
+                        size="small"
+                        type="button"
+                        onClick={() =>
+                          setReplyTarget({
+                            commentId: item.id,
+                            name: item.userName || 'comment',
+                            parentReplyId: '',
+                            parentReplyName: '',
+                          })
+                        }
+                        startIcon={<Reply size={13} strokeWidth={2.2} />}
+                        sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900 }}
+                      >
+                        Reply
+                      </Button>
+                      <Button
+                        size="small"
+                        type="button"
+                        onClick={() => onReportComment(item)}
+                        startIcon={<Flag size={13} strokeWidth={2.2} />}
+                        sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900, color: '#64748b' }}
+                      >
+                        Report
+                      </Button>
+                    </Stack>
+                  </Stack>
+
+                  {item.replies.length ? (
+                    <Stack
+                      spacing={1}
+                      mt={1.2}
+                      pl={{ xs: 1, sm: 2 }}
+                      sx={{ borderLeft: '2px solid rgba(16,185,129,0.14)' }}
+                    >
+                      {item.replies.map((replyItem, replyIndex) => {
+                        const replyLikes = replyItem.likes || [];
+                        const isReplyLiked = replyLikes.includes(currentUserId);
+                        const replyId = replyItem.id || '';
+                        const canLikeReply = Boolean(item.id && replyId);
+
+                        return (
+                          <Box key={replyItem.id || `${replyItem.userId}-${replyItem.createdAt}-${replyIndex}`}>
+                            <Typography sx={{ fontWeight: 950, color: '#0f172a' }}>
+                              {replyItem.userName}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#475569' }}>
+                              {replyItem.parentReplyName ? (
+                                <Box component="span" sx={{ color: '#0f766e', fontWeight: 900 }}>
+                                  @{replyItem.parentReplyName}{' '}
+                                </Box>
+                              ) : null}
+                              {replyItem.text}
+                            </Typography>
+                            <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                              <Button
+                                size="small"
+                                type="button"
+                                disabled={!canLikeReply}
+                                title={canLikeReply ? 'Like this reply' : 'This reply is missing a stable id'}
+                                onClick={() => onReplyLike(item.id, replyId)}
+                                startIcon={<Heart size={13} strokeWidth={2.2} fill={isReplyLiked ? 'currentColor' : 'none'} />}
+                                sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900 }}
+                              >
+                                {replyLikes.length || 'Like'}
+                              </Button>
+                              <Button
+                                size="small"
+                                type="button"
+                                onClick={() =>
+                                  setReplyTarget({
+                                    commentId: item.id,
+                                    name: replyItem.userName || 'reply',
+                                    parentReplyId: replyId,
+                                    parentReplyName: replyItem.userName || 'reply',
+                                  })
+                                }
+                                startIcon={<Reply size={13} strokeWidth={2.2} />}
+                                sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900 }}
+                              >
+                                Reply
+                              </Button>
+                              <Button
+                                size="small"
+                                type="button"
+                                onClick={() => onReportReply(item, replyItem, replyIndex)}
+                                startIcon={<Flag size={13} strokeWidth={2.2} />}
+                                sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900, color: '#64748b' }}
+                              >
+                                Report
+                              </Button>
+                            </Stack>
+                            {replyIndex < item.replies.length - 1 ? <Divider sx={{ mt: 1 }} /> : null}
+                          </Box>
+                        );
+                      })}
+                    </Stack>
+                  ) : null}
+                </Paper>
+              );
+            })}
+          </Stack>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 

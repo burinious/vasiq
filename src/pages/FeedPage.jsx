@@ -1,8 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
-import { Megaphone } from 'lucide-react';
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  IconButton,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import CampaignRoundedIcon from '@mui/icons-material/CampaignRounded';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
+import LocalFireDepartmentRoundedIcon from '@mui/icons-material/LocalFireDepartmentRounded';
+import ReportRoundedIcon from '@mui/icons-material/ReportRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import PostCard from '../components/feed/PostCard';
 import PostComposer from '../components/feed/PostComposer';
-import StatusBoard from '../components/feed/StatusBoard';
 import Loader from '../components/layout/Loader';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -10,10 +33,8 @@ import {
   blockUser,
   createPost,
   createReport,
-  createStory,
   listenToAnnouncements,
   listenToPosts,
-  listenToStories,
   listenToUsers,
   recordPostShare,
   replyToPostComment,
@@ -22,6 +43,14 @@ import {
   togglePostReplyLike,
 } from '../firebase/firestore';
 import { getPostCategoryMeta } from '../lib/campusSignal';
+import { normalizeAcademicValue } from '../data/nigeriaAcademics';
+import {
+  glassCardSx,
+  pageBgSx,
+  primaryButtonSx,
+  softInputSx,
+} from '../styles/premiumTheme';
+import '../styles/feedstyle.css';
 import { getUserDisplayName } from '../utils/userIdentity';
 
 function createClientPostId() {
@@ -32,19 +61,24 @@ function createClientPostId() {
   return `post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function FeedShellCard({ children, sx, className = '' }) {
+  return (
+    <Card className={`vasiq-feed-card ${className}`} sx={{ ...glassCardSx, borderRadius: 4, overflow: 'hidden', ...sx }}>
+      <CardContent sx={{ p: { xs: 2, sm: 2.4, md: 2.8 } }}>{children}</CardContent>
+    </Card>
+  );
+}
+
 function FeedPage() {
   const { currentUser, profile } = useAuth();
   const publicName = getUserDisplayName({ ...profile, email: currentUser?.email });
   const [posts, setPosts] = useState([]);
   const [users, setUsers] = useState([]);
-  const [stories, setStories] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
   const [posting, setPosting] = useState(false);
   const [postsReady, setPostsReady] = useState(false);
   const [usersReady, setUsersReady] = useState(false);
-  const [storiesReady, setStoriesReady] = useState(false);
   const [announcementsReady, setAnnouncementsReady] = useState(false);
-  const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [feedStatus, setFeedStatus] = useState('');
   const [activeFilter, setActiveFilter] = useState('for-you');
   const [reportDialog, setReportDialog] = useState(null);
@@ -81,10 +115,6 @@ function FeedPage() {
       setUsers(nextUsers);
       setUsersReady(true);
     });
-    const unsubscribeStories = listenToStories((nextStories) => {
-      setStories(nextStories);
-      setStoriesReady(true);
-    });
     const unsubscribeAnnouncements = listenToAnnouncements((nextAnnouncements) => {
       setAnnouncements(nextAnnouncements);
       setAnnouncementsReady(true);
@@ -93,7 +123,6 @@ function FeedPage() {
     return () => {
       unsubscribePosts();
       unsubscribeUsers();
-      unsubscribeStories();
       unsubscribeAnnouncements();
       pendingPostTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
       pendingPostTimeoutsRef.current.clear();
@@ -125,6 +154,7 @@ function FeedPage() {
       const writePromise = createPost({
         userId: currentUser.uid,
         authorName: publicName,
+        authorUniversity: profile?.showUniversity === false ? '' : profile?.university || '',
         authorDepartment: profile?.showDepartment === false ? '' : profile?.department || '',
         authorLevel: profile?.showLevel === false ? '' : profile?.level || '',
         authorAvatar: profile?.avatarUrl || '',
@@ -182,24 +212,6 @@ function FeedPage() {
     }
   };
 
-  const handleCreateStory = async (text) => {
-    setFeedStatus('');
-
-    try {
-      await createStory({
-        authorId: currentUser.uid,
-        authorName: publicName,
-        authorAvatar: profile?.avatarUrl || '',
-        authorDepartment: profile?.showDepartment === false ? '' : profile?.department || '',
-        authorLevel: profile?.showLevel === false ? '' : profile?.level || '',
-        text,
-      });
-    } catch (error) {
-      setFeedStatus(error.message || 'Unable to create story.');
-      throw error;
-    }
-  };
-
   const handleCommentReply = async (postId, replyTarget, text) => {
     setFeedStatus('');
 
@@ -220,10 +232,19 @@ function FeedPage() {
   const handleReplyLike = async (postId, commentId, replyId) => {
     setFeedStatus('');
 
+    if (!commentId || !replyId) {
+      setFeedStatus('Unable to like this reply because it is missing a valid reply id.');
+      return;
+    }
+
     try {
       await togglePostReplyLike(postId, commentId, replyId, currentUser.uid);
     } catch (error) {
-      setFeedStatus(error.message || 'Unable to like this reply.');
+      const message =
+        error.code === 'permission-denied'
+          ? 'Firebase rules blocked this reply like. Deploy the latest firestore.rules so reply likes are allowed.'
+          : error.message || 'Unable to like this reply.';
+      setFeedStatus(message);
     }
   };
 
@@ -367,44 +388,55 @@ function FeedPage() {
 
   const blockedUserIds = Array.isArray(profile?.blockedUserIds) ? profile.blockedUserIds : [];
   const visiblePosts = posts.filter((post) => !blockedUserIds.includes(post.userId));
-  const normalizedDepartment = profile?.department?.trim().toLowerCase() || '';
+  const normalizedUniversity = normalizeAcademicValue(profile?.university);
+  const normalizedDepartment = normalizeAcademicValue(profile?.department);
   const prioritizedPosts = [...visiblePosts]
     .map((post) => {
       const categoryMeta = getPostCategoryMeta(
         post.category || (post.signalLevel === 'urgent' ? 'urgent' : 'social'),
       );
-      const normalizedAuthorDepartment = post.authorDepartment?.trim().toLowerCase() || '';
+      const normalizedAuthorUniversity = normalizeAcademicValue(post.authorUniversity);
+      const normalizedAuthorDepartment = normalizeAcademicValue(post.authorDepartment);
       const createdAtTime =
         typeof post.createdAt?.toMillis === 'function'
           ? post.createdAt.toMillis()
           : new Date(post.createdAt || 0).getTime();
       const engagementScore =
         (post.likes?.length || 0) + (post.comments?.length || 0) * 2 + (post.shareCount || 0) * 3;
-      const recencyBoost = Math.max(0, 5 - Math.floor((Date.now() - createdAtTime) / (1000 * 60 * 60 * 6)));
+      const recencyBoost = Math.max(
+        0,
+        5 - Math.floor((Date.now() - createdAtTime) / (1000 * 60 * 60 * 6)),
+      );
       const categoryBoost =
         post.signalLevel === 'urgent'
           ? 50
           : categoryMeta.value === 'materials'
             ? 30
-          : categoryMeta.value === 'opportunity'
-            ? 28
-            : categoryMeta.value === 'sapa'
-              ? 26
-            : categoryMeta.value === 'academic'
-              ? 24
-              : categoryMeta.value === 'hostel'
-                ? 18
-                : categoryMeta.value === 'event'
-                  ? 16
-                  : 10;
+            : categoryMeta.value === 'opportunity'
+              ? 28
+              : categoryMeta.value === 'sapa'
+                ? 26
+                : categoryMeta.value === 'academic'
+                  ? 24
+                  : categoryMeta.value === 'hostel'
+                    ? 18
+                    : categoryMeta.value === 'event'
+                      ? 16
+                      : 10;
       const departmentBoost =
-        normalizedDepartment && normalizedAuthorDepartment === normalizedDepartment ? 32 : 0;
+        normalizedDepartment &&
+        normalizedAuthorDepartment === normalizedDepartment &&
+        (!normalizedUniversity || normalizedAuthorUniversity === normalizedUniversity)
+          ? 36
+          : 0;
+      const universityBoost =
+        normalizedUniversity && normalizedAuthorUniversity === normalizedUniversity ? 18 : 0;
 
       return {
         ...post,
         _categoryMeta: categoryMeta,
         _createdAtTime: createdAtTime,
-        _priorityScore: categoryBoost + departmentBoost + engagementScore + recencyBoost,
+        _priorityScore: categoryBoost + departmentBoost + universityBoost + engagementScore + recencyBoost,
       };
     })
     .sort((first, second) => {
@@ -414,11 +446,30 @@ function FeedPage() {
 
       return second._createdAtTime - first._createdAtTime;
     });
+
   const spotlightUsers = users
     .filter((user) => user.id !== currentUser.uid && !blockedUserIds.includes(user.id))
-    .slice(0, 6);
+    .sort((first, second) => {
+      const firstDepartmentMatch =
+        normalizedDepartment &&
+        normalizeAcademicValue(first.department) === normalizedDepartment &&
+        (!normalizedUniversity || normalizeAcademicValue(first.university) === normalizedUniversity);
+      const secondDepartmentMatch =
+        normalizedDepartment &&
+        normalizeAcademicValue(second.department) === normalizedDepartment &&
+        (!normalizedUniversity || normalizeAcademicValue(second.university) === normalizedUniversity);
+      if (firstDepartmentMatch !== secondDepartmentMatch) return firstDepartmentMatch ? -1 : 1;
+
+      const firstUniversityMatch =
+        normalizedUniversity && normalizeAcademicValue(first.university) === normalizedUniversity;
+      const secondUniversityMatch =
+        normalizedUniversity && normalizeAcademicValue(second.university) === normalizedUniversity;
+      if (firstUniversityMatch !== secondUniversityMatch) return firstUniversityMatch ? -1 : 1;
+
+      return 0;
+    })
+    .slice(0, 4);
   const activeAnnouncements = announcements.filter((item) => item.isActive !== false).slice(0, 3);
-  const bannerAnnouncement = activeAnnouncements[activeBannerIndex] || activeAnnouncements[0];
   const urgentCount = prioritizedPosts.filter(
     (post) => post.signalLevel === 'urgent' || post._categoryMeta.value === 'urgent',
   ).length;
@@ -429,22 +480,30 @@ function FeedPage() {
     (post) => post._categoryMeta.value === 'materials',
   ).length;
   const sapaCount = prioritizedPosts.filter((post) => post._categoryMeta.value === 'sapa').length;
+  const universityCount = prioritizedPosts.filter(
+    (post) => normalizedUniversity && normalizeAcademicValue(post.authorUniversity) === normalizedUniversity,
+  ).length;
   const departmentCount = prioritizedPosts.filter(
     (post) =>
       normalizedDepartment &&
-      post.authorDepartment?.trim().toLowerCase() === normalizedDepartment,
+      normalizeAcademicValue(post.authorDepartment) === normalizedDepartment &&
+      (!normalizedUniversity || normalizeAcademicValue(post.authorUniversity) === normalizedUniversity),
   ).length;
 
   const feedFilters = [
     { value: 'for-you', label: 'For you' },
     { value: 'urgent', label: `Urgent ${urgentCount ? `(${urgentCount})` : ''}`.trim() },
     {
+      value: 'university',
+      label: normalizedUniversity ? `My university ${universityCount ? `(${universityCount})` : ''}`.trim() : 'My campus',
+    },
+    {
       value: 'department',
-      label: normalizedDepartment ? 'My department' : 'Campus circle',
+      label: normalizedDepartment ? `My course ${departmentCount ? `(${departmentCount})` : ''}`.trim() : 'My course',
     },
     { value: 'materials', label: `Materials ${materialsCount ? `(${materialsCount})` : ''}`.trim() },
     { value: 'sapa', label: `Sapa ${sapaCount ? `(${sapaCount})` : ''}`.trim() },
-    { value: 'opportunity', label: 'Opportunities' },
+    { value: 'opportunity', label: `Opportunities ${opportunityCount ? `(${opportunityCount})` : ''}`.trim() },
     { value: 'event', label: 'Events' },
     { value: 'hostel', label: 'Hostel gist' },
   ];
@@ -454,283 +513,337 @@ function FeedPage() {
     if (activeFilter === 'urgent') {
       return post.signalLevel === 'urgent' || post._categoryMeta.value === 'urgent';
     }
+    if (activeFilter === 'university') {
+      if (!normalizedUniversity) return true;
+      return normalizeAcademicValue(post.authorUniversity) === normalizedUniversity;
+    }
     if (activeFilter === 'department') {
-      if (!normalizedDepartment) {
-        return true;
-      }
-
-      return post.authorDepartment?.trim().toLowerCase() === normalizedDepartment;
+      if (!normalizedDepartment) return true;
+      return (
+        normalizeAcademicValue(post.authorDepartment) === normalizedDepartment &&
+        (!normalizedUniversity || normalizeAcademicValue(post.authorUniversity) === normalizedUniversity)
+      );
     }
 
     return post._categoryMeta.value === activeFilter;
   });
 
-  useEffect(() => {
-    if (activeAnnouncements.length <= 1) return undefined;
-
-    const intervalId = window.setInterval(() => {
-      setActiveBannerIndex((currentIndex) => (currentIndex + 1) % activeAnnouncements.length);
-    }, 6000);
-
-    return () => window.clearInterval(intervalId);
-  }, [activeAnnouncements.length]);
-
-  useEffect(() => {
-    if (activeBannerIndex >= activeAnnouncements.length) {
-      setActiveBannerIndex(0);
-    }
-  }, [activeAnnouncements.length, activeBannerIndex]);
-
-  useEffect(() => {
-    if (!reportDialog) return undefined;
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        closeReportDialog();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [reportDialog, reporting]);
-
   return (
-    <div className="social-feed-layout">
-      <div className="feed-main-column social-feed-main">
-        <section className="panel feed-banner-slider">
-          <div className="feed-banner-icon" aria-hidden="true">
-            <Megaphone size={20} strokeWidth={2.2} />
-          </div>
-          <div className="feed-banner-copy">
-            <span>Campus bulletin</span>
-            <h1>{bannerAnnouncement?.title || `${profile?.department || 'Campus'} pulse is moving.`}</h1>
-            <p>
-              {bannerAnnouncement?.message ||
-                'Push useful class changes, event drops, hostel updates, and real opportunities students can act on.'}
-            </p>
-          </div>
-          <div className="feed-banner-meta">
-            <span>{urgentCount} urgent</span>
-            <span>{materialsCount} materials</span>
-            <span>{opportunityCount} opportunities</span>
-          </div>
-          {activeAnnouncements.length > 1 ? (
-            <div className="feed-banner-dots" aria-label="Campus bulletin slides">
-              {activeAnnouncements.map((item, index) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={index === activeBannerIndex ? 'is-active' : ''}
-                  onClick={() => setActiveBannerIndex(index)}
-                  aria-label={`Show ${item.title}`}
-                />
-              ))}
-            </div>
-          ) : null}
-        </section>
-
-        <StatusBoard
-          onCreateStory={handleCreateStory}
-          profile={profile}
-          stories={stories}
-          storiesReady={storiesReady}
-          users={users}
-        />
-
-        <PostComposer onSubmit={handleCreatePost} busy={posting} profile={profile} />
-
-        {feedStatus ? <p className="status-text feed-status-note">{feedStatus}</p> : null}
-
-        <section className="panel feed-filter-panel">
-          <div className="feed-filter-header">
-            <div>
-              <p className="eyebrow">Signal filters</p>
-              <h2>Open what matters first</h2>
-            </div>
-            <span className="feed-filter-summary">
-              {normalizedDepartment
-                ? `${profile.department} updates are ranked higher for you`
-                : 'Complete your profile to see tighter class and hostel signal'}
-            </span>
-          </div>
-          <div className="feed-filter-row">
-            {feedFilters.map((filter) => (
-              <button
-                key={filter.value}
-                type="button"
-                className={`feed-filter-chip ${
-                  activeFilter === filter.value ? 'feed-filter-chip-active' : ''
-                }`}
-                onClick={() => setActiveFilter(filter.value)}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="feed-list">
-          {postsReady ? (
-            filteredPosts.length ? (
-              filteredPosts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  isLiked={post.likes?.includes(currentUser.uid)}
-                  onLike={() => handleLike(post)}
-                  onComment={(text) => handleComment(post.id, text)}
-                  onCommentLike={(commentIndex) => handleCommentLike(post.id, commentIndex)}
-                  onCommentReply={(replyTarget, text) =>
-                    handleCommentReply(post.id, replyTarget, text)
-                  }
-                  onReplyLike={(commentIndex, replyIndex) =>
-                    handleReplyLike(post.id, commentIndex, replyIndex)
-                  }
-                  onShare={() => handleShare(post)}
-                  onReportPost={() => handleReportPost(post)}
-                  onReportComment={(commentItem) => handleReportComment(post, commentItem)}
-                  onReportReply={(commentItem, replyItem, replyIndex) =>
-                    handleReportReply(post, commentItem, replyItem, replyIndex)
-                  }
-                  onBlockAuthor={() => handleBlockAuthor(post)}
-                  currentUserId={currentUser.uid}
-                />
-              ))
-            ) : (
-              <article className="panel feed-empty-state">
-                <p className="eyebrow">No posts yet</p>
-                <h2>Nothing matches this signal filter yet.</h2>
-                <p>
-                  Try another filter or post the first useful update students in your
-                  circle should see.
-                </p>
-              </article>
-            )
-          ) : (
-            <Loader compact label="Refreshing the campus feed..." />
-          )}
-        </section>
-      </div>
-
-      <aside className="feed-right-rail">
-        <section className="panel feed-right-card">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Launch radar</p>
-              <h2>Campus board</h2>
-            </div>
-          </div>
-          {announcementsReady ? (
-            <div className="trend-list">
-              {activeAnnouncements.map((item) => (
-                <article key={item.id} className="trend-item">
-                  <span className="trend-index">{item.tag?.slice(0, 1) || 'N'}</span>
-                  <div>
-                    <strong>{item.title}</strong>
-                    <p>{item.message}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <Loader compact label="Refreshing campus notices..." />
-          )}
-        </section>
-
-        <section className="panel feed-right-card">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Connectors</p>
-              <h2>Students in motion</h2>
-            </div>
-          </div>
-          {usersReady ? (
-            <div className="mini-contact-list">
-              {spotlightUsers.map((user) => (
-                <article key={`contact-${user.id}`} className="mini-contact-item">
-                  <div className="avatar avatar-sm">
-                    {user.avatarUrl ? (
-                      <img src={user.avatarUrl} alt={getUserDisplayName(user)} />
-                    ) : (
-                      <span>{getUserDisplayName(user)[0] || 'S'}</span>
-                    )}
-                  </div>
-                  <div>
-                    <strong>{getUserDisplayName(user)}</strong>
-                    <p>
-                      {user.department} / {user.level}
-                    </p>
-                  </div>
-                  <span className="mini-contact-presence" />
-                </article>
-              ))}
-            </div>
-          ) : (
-            <Loader compact label="Refreshing active contacts..." />
-          )}
-        </section>
-      </aside>
-
-      {reportDialog ? (
-        <div
-          className="report-modal-backdrop"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              closeReportDialog();
-            }
-          }}
+    <Box
+      className="vasiq-feed-page"
+      sx={{
+        ...pageBgSx,
+      }}
+    >
+      <Container
+        className="vasiq-feed-container"
+        maxWidth={false}
+      >
+        <Box
+          className="vasiq-feed-grid"
         >
-          <form className="report-modal panel" onSubmit={handleSubmitReport}>
-            <div className="report-modal-heading">
-              <p className="eyebrow">Safety report</p>
-              <h2>Report this {reportDialog.targetName}</h2>
-              <span>
-                Reports help moderators keep VASIQ safe for students. Add a clear reason so it can
-                be reviewed properly.
-              </span>
-            </div>
+          <Box
+            className="vasiq-feed-main"
+          >
+            <Box className="vasiq-feed-main-stack">
+              <FeedShellCard
+                className="vasiq-feed-card-intro"
+                sx={{
+                  background:
+                    'linear-gradient(145deg, rgba(255,255,255,0.92), rgba(255,255,255,0.72))',
+                  boxShadow: '0 18px 54px rgba(15,23,42,0.10)',
+                }}
+              >
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.3} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }}>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 950, letterSpacing: 1.2 }}>
+                      Campus feed
+                    </Typography>
+                    <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 950, lineHeight: 1.1 }}>
+                      What students are posting now
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
+                      Classes, materials, hostel updates, sapa tips, opportunities, and campus gist.
+                    </Typography>
+                  </Box>
+                  <Chip
+                    size="small"
+                    label={`${filteredPosts.length} visible posts`}
+                    sx={{ borderRadius: 999, fontWeight: 900, bgcolor: 'rgba(15,118,110,0.1)', color: '#0f766e' }}
+                  />
+                </Stack>
+              </FeedShellCard>
 
-            <label className="report-field">
-              <span>Reason</span>
-              <input
-                className="input elevated-input"
+              <FeedShellCard className="vasiq-feed-card-composer">
+                <PostComposer onSubmit={handleCreatePost} busy={posting} profile={profile} />
+              </FeedShellCard>
+
+              {feedStatus ? (
+                <Alert severity="info" sx={{ borderRadius: 4, background: 'rgba(239,246,255,0.78)', border: '1px solid rgba(59,130,246,0.18)' }}>
+                  {feedStatus}
+                </Alert>
+              ) : null}
+
+              <FeedShellCard className="vasiq-feed-card-filters">
+                <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1.2} mb={1.4}>
+                  <Box>
+                    <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 950, letterSpacing: 1.3 }}>
+                      Signal filters
+                    </Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 800, color: '#64748b' }}>
+                      Pick the updates you want to see first.
+                    </Typography>
+                  </Box>
+                  <Chip
+                    size="small"
+                    label={`Showing ${filteredPosts.length} posts`}
+                    sx={{ borderRadius: 999, fontWeight: 900, bgcolor: 'rgba(15,118,110,0.1)', color: '#0f766e' }}
+                  />
+                </Stack>
+
+                <Box className="vasiq-feed-chip-row">
+                  {feedFilters.map((filter) => (
+                    <Chip
+                      key={filter.value}
+                      label={filter.label}
+                      clickable
+                      onClick={() => setActiveFilter(filter.value)}
+                      color={activeFilter === filter.value ? 'primary' : 'default'}
+                      variant={activeFilter === filter.value ? 'filled' : 'outlined'}
+                      size="small"
+                      sx={{
+                        borderRadius: 999,
+                        fontWeight: 900,
+                        px: 0.6,
+                        bgcolor: activeFilter === filter.value ? undefined : 'rgba(255,255,255,0.62)',
+                      }}
+                    />
+                  ))}
+                </Box>
+              </FeedShellCard>
+
+              <Box className="vasiq-feed-post-list">
+                {postsReady ? (
+                  filteredPosts.length ? (
+                    filteredPosts.map((post) => (
+                      <Box
+                        key={post.id}
+                        className="vasiq-feed-post-shell"
+                      >
+                        <PostCard
+                          post={post}
+                          isLiked={post.likes?.includes(currentUser.uid)}
+                          onLike={() => handleLike(post)}
+                          onComment={(text) => handleComment(post.id, text)}
+                          onCommentLike={(commentIndex) => handleCommentLike(post.id, commentIndex)}
+                          onCommentReply={(replyTarget, text) => handleCommentReply(post.id, replyTarget, text)}
+                          onReplyLike={(commentIndex, replyIndex) => handleReplyLike(post.id, commentIndex, replyIndex)}
+                          onShare={() => handleShare(post)}
+                          onReportPost={() => handleReportPost(post)}
+                          onReportComment={(commentItem) => handleReportComment(post, commentItem)}
+                          onReportReply={(commentItem, replyItem, replyIndex) => handleReportReply(post, commentItem, replyItem, replyIndex)}
+                          onBlockAuthor={() => handleBlockAuthor(post)}
+                          currentUserId={currentUser.uid}
+                        />
+                      </Box>
+                    ))
+                  ) : (
+                    <FeedShellCard className="vasiq-feed-card-empty">
+                      <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 950 }}>
+                        No posts yet
+                      </Typography>
+                      <Typography variant="h5" sx={{ fontWeight: 950, color: '#0f172a' }}>
+                        Nothing matches this signal filter yet.
+                      </Typography>
+                      <Typography sx={{ mt: 0.7, color: '#64748b' }}>
+                        Try another filter or post the first useful update students in your circle should see.
+                      </Typography>
+                    </FeedShellCard>
+                  )
+                ) : (
+                  <FeedShellCard className="vasiq-feed-card-loading">
+                    <Loader compact label="Refreshing the campus feed..." />
+                  </FeedShellCard>
+                )}
+              </Box>
+            </Box>
+          </Box>
+
+          <Box
+            className="vasiq-feed-rail"
+          >
+            <Box className="vasiq-feed-rail-stack">
+              <FeedShellCard className="vasiq-feed-card-rail">
+                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Box>
+                    <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 950, letterSpacing: 1.2 }}>
+                      Launch radar
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 950, color: '#0f172a' }}>
+                      Campus board
+                    </Typography>
+                  </Box>
+                  <Avatar sx={{ bgcolor: 'rgba(15,118,110,0.12)', color: '#0f766e' }}>
+                    <CampaignRoundedIcon />
+                  </Avatar>
+                </Stack>
+
+                {announcementsReady ? (
+                  <Stack spacing={1.4}>
+                    {activeAnnouncements.length ? (
+                      activeAnnouncements.map((item) => (
+                        <Paper key={item.id} elevation={0} sx={{ p: 1.25, borderRadius: 3, background: 'rgba(255,255,255,0.66)', border: '1px solid rgba(148,163,184,0.18)' }}>
+                          <Stack direction="row" spacing={1.4}>
+                            <Avatar sx={{ width: 34, height: 34, bgcolor: 'rgba(15,118,110,0.12)', color: '#0f766e', fontWeight: 950 }}>
+                              {item.tag?.slice(0, 1) || 'N'}
+                            </Avatar>
+                            <Box>
+                              <Typography sx={{ fontWeight: 950, color: '#0f172a' }}>{item.title}</Typography>
+                              <Typography variant="body2" sx={{ color: '#64748b' }}>{item.message}</Typography>
+                            </Box>
+                          </Stack>
+                        </Paper>
+                      ))
+                    ) : (
+                      <Typography variant="body2" sx={{ color: '#64748b' }}>No active campus notices yet.</Typography>
+                    )}
+                  </Stack>
+                ) : (
+                  <Loader compact label="Refreshing campus notices..." />
+                )}
+              </FeedShellCard>
+
+              <FeedShellCard className="vasiq-feed-card-rail">
+                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Box>
+                    <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 950, letterSpacing: 1.2 }}>
+                      Connectors
+                    </Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 950, color: '#0f172a' }}>
+                      Students in motion
+                    </Typography>
+                  </Box>
+                  <Avatar sx={{ bgcolor: 'rgba(16,185,129,0.12)', color: '#059669' }}>
+                    <GroupsRoundedIcon />
+                  </Avatar>
+                </Stack>
+
+                {usersReady ? (
+                  <Stack spacing={1.3}>
+                    {spotlightUsers.map((user) => (
+                      <Paper key={`contact-${user.id}`} elevation={0} sx={{ p: 1.1, borderRadius: 3, background: 'rgba(255,255,255,0.66)', border: '1px solid rgba(148,163,184,0.18)' }}>
+                        <Stack direction="row" spacing={1.3} alignItems="center">
+                          <Avatar src={user.avatarUrl || ''} sx={{ bgcolor: 'rgba(15,118,110,0.12)', color: '#0f766e', fontWeight: 950 }}>
+                            {getUserDisplayName(user)[0] || 'S'}
+                          </Avatar>
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Typography noWrap sx={{ fontWeight: 950, color: '#0f172a' }}>
+                              {getUserDisplayName(user)}
+                            </Typography>
+                            <Typography noWrap variant="body2" sx={{ color: '#64748b' }}>
+                              {user.department} / {user.level}
+                            </Typography>
+                            <Typography noWrap variant="caption" sx={{ color: '#94a3b8', fontWeight: 800 }}>
+                              {user.university || 'University not set'}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#22c55e', boxShadow: '0 0 0 5px rgba(34,197,94,0.12)' }} />
+                        </Stack>
+                      </Paper>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Loader compact label="Refreshing active contacts..." />
+                )}
+              </FeedShellCard>
+
+              <FeedShellCard className="vasiq-feed-card-rail vasiq-feed-card-score" sx={{ background: 'linear-gradient(145deg, rgba(15,23,42,0.92), rgba(30,41,59,0.82))', color: '#fff' }}>
+                <Stack direction="row" spacing={1.4} alignItems="center">
+                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.14)' }}>
+                    <LocalFireDepartmentRoundedIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography sx={{ fontWeight: 950 }}>Signal score</Typography>
+                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.72)' }}>
+                      Feed ranks urgent posts, materials, course updates, and high-engagement gist first.
+                    </Typography>
+                  </Box>
+                </Stack>
+              </FeedShellCard>
+            </Box>
+          </Box>
+        </Box>
+      </Container>
+
+      <Dialog
+        open={Boolean(reportDialog)}
+        onClose={closeReportDialog}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            ...glassCardSx,
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.92), rgba(255,255,255,0.72))',
+          },
+        }}
+      >
+        <Box component="form" onSubmit={handleSubmitReport}>
+          <DialogTitle sx={{ pb: 1 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+              <Box>
+                <Typography variant="overline" sx={{ color: 'error.main', fontWeight: 950 }}>
+                  Safety report
+                </Typography>
+                <Typography variant="h5" sx={{ fontWeight: 950, color: '#0f172a' }}>
+                  Report this {reportDialog?.targetName}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748b', mt: 0.6 }}>
+                  Reports help moderators keep VASIQ safe for students.
+                </Typography>
+              </Box>
+              <IconButton onClick={closeReportDialog} disabled={reporting}>
+                <CloseRoundedIcon />
+              </IconButton>
+            </Stack>
+          </DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+            <Stack spacing={2}>
+              <TextField
+                label="Reason"
                 value={reportReason}
                 onChange={(event) => setReportReason(event.target.value)}
                 placeholder="Spam, harassment, scam, unsafe content..."
                 autoFocus
                 required
+                sx={softInputSx}
               />
-            </label>
-
-            <label className="report-field">
-              <span>Extra details</span>
-              <textarea
-                className="input textarea elevated-input"
+              <TextField
+                label="Extra details"
                 value={reportDetails}
                 onChange={(event) => setReportDetails(event.target.value)}
                 placeholder="Optional context for the admin team"
-                rows={4}
+                multiline
+                minRows={4}
+                sx={softInputSx}
               />
-            </label>
-
-            <div className="report-preview">
-              <strong>Reported content</strong>
-              <p>{reportDialog.report.targetLabel}</p>
-            </div>
-
-            <div className="report-modal-actions">
-              <button type="button" className="ghost-button" onClick={closeReportDialog}>
-                Cancel
-              </button>
-              <button type="submit" className="primary-button" disabled={reporting}>
-                {reporting ? 'Sending...' : 'Send report'}
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : null}
-    </div>
+              <Paper elevation={0} sx={{ p: 2, borderRadius: 4, background: 'rgba(248,250,252,0.86)', border: '1px solid rgba(148,163,184,0.22)' }}>
+                <Typography sx={{ fontWeight: 950, color: '#0f172a' }}>Reported content</Typography>
+                <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>{reportDialog?.report.targetLabel}</Typography>
+              </Paper>
+            </Stack>
+          </DialogContent>
+          <Divider />
+          <DialogActions sx={{ p: 2 }}>
+            <Button onClick={closeReportDialog} disabled={reporting} sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900 }}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="contained" disabled={reporting} sx={primaryButtonSx} startIcon={<ReportRoundedIcon />}>
+              {reporting ? 'Sending...' : 'Send report'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+    </Box>
   );
 }
 

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import {
   Bell,
   CalendarDays,
+  ChevronsLeft,
+  ChevronsRight,
   CircleUserRound,
   Compass,
   HelpCircle,
@@ -70,7 +72,7 @@ const routeMeta = {
   '/groups': {
     kicker: 'Group radar',
     title: 'Useful circles',
-    note: 'Departments, hostels, study crews, builders, and community spaces.',
+    note: 'Courses, hostels, study crews, builders, and community spaces.',
   },
   '/chat': {
     kicker: 'Direct messages',
@@ -102,6 +104,10 @@ function AppShell() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [skippingOnboarding, setSkippingOnboarding] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('vasiq:sidebar-collapsed') === 'true';
+  });
   const userIdentity = { ...profile, email: currentUser?.email };
   const publicName = getUserDisplayName(userIdentity);
   const firstName = getUserFirstName(userIdentity, 'You');
@@ -132,6 +138,16 @@ function AppShell() {
   const handleToggleTheme = () => {
     setTheme(nextTheme);
     persistTheme(nextTheme);
+  };
+
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed((current) => {
+      const nextValue = !current;
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('vasiq:sidebar-collapsed', String(nextValue));
+      }
+      return nextValue;
+    });
   };
 
   useEffect(() => {
@@ -192,7 +208,11 @@ function AppShell() {
   };
 
   return (
-    <div className={`app-shell ${dataSaver ? 'app-shell-save-data' : ''}`}>
+    <div
+      className={`app-shell ${dataSaver ? 'app-shell-save-data' : ''} ${
+        sidebarCollapsed ? 'app-shell-sidebar-collapsed' : ''
+      }`}
+    >
       <div className="app-shell-atmosphere" aria-hidden="true">
         <span className="app-shell-glow app-shell-glow-a" />
         <span className="app-shell-glow app-shell-glow-b" />
@@ -211,6 +231,19 @@ function AppShell() {
               <strong>VASIQ</strong>
               <span>Campus Social</span>
             </div>
+            <button
+              type="button"
+              className="sidebar-collapse-button"
+              onClick={handleToggleSidebar}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              {sidebarCollapsed ? (
+                <ChevronsRight size={17} strokeWidth={2.2} aria-hidden="true" />
+              ) : (
+                <ChevronsLeft size={17} strokeWidth={2.2} aria-hidden="true" />
+              )}
+            </button>
           </div>
 
           <NavLink to="/profile" className="sidebar-user-row sidebar-user-row-primary">
@@ -223,7 +256,8 @@ function AppShell() {
             </div>
             <div className="sidebar-user-copy">
               <strong>{publicName}</strong>
-              <span>{profile?.department || 'Campus community'}</span>
+              <span>{profile?.university || 'Campus community'}</span>
+              <span>{profile?.department || 'Course pending'}</span>
             </div>
           </NavLink>
 
@@ -434,7 +468,7 @@ function AppShell() {
               </div>
               <div>
                 <strong>{publicName}</strong>
-                <p>{profile?.department || 'Campus community'}</p>
+                <p>{profile?.university || profile?.department || 'Campus community'}</p>
               </div>
             </div>
 

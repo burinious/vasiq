@@ -1,0 +1,798 @@
+.vasiq-feed-page {
+  width: 100%;
+  max-width: 100%;
+  padding: 12px 10px calc(108px + env(safe-area-inset-bottom, 0px));
+  overflow: visible;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(24, 119, 242, 0.1), transparent 28%),
+    radial-gradient(circle at 96% 4%, rgba(20, 184, 166, 0.08), transparent 26%),
+    #f0f2f5 !important;
+}
+
+.page-shell {
+  min-height: 0;
+}
+
+.page-shell-frame {
+  position: sticky !important;
+  top: var(--shell-padding);
+  z-index: 120;
+}
+
+.social-topbar,
+.announcement-ticker {
+  position: static !important;
+}
+
+.page-shell-content {
+  min-height: 0;
+}
+
+.vasiq-feed-container {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.vasiq-feed-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.vasiq-feed-main,
+.vasiq-feed-rail {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.vasiq-feed-main-stack,
+.vasiq-feed-post-list,
+.vasiq-feed-rail-stack {
+  display: grid;
+  min-width: 0;
+  width: 100%;
+}
+
+.vasiq-feed-main-stack {
+  gap: 14px;
+}
+
+.vasiq-feed-post-list {
+  gap: 16px;
+}
+
+.vasiq-feed-rail {
+  display: none;
+}
+
+.vasiq-feed-rail-stack {
+  gap: 14px;
+}
+
+.vasiq-feed-card {
+  border: 1px solid rgba(209, 213, 219, 0.72) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07) !important;
+  backdrop-filter: blur(14px);
+}
+
+.vasiq-feed-card .MuiCardContent-root {
+  padding: 16px !important;
+}
+
+.vasiq-feed-card-intro {
+  background:
+    linear-gradient(135deg, rgba(24, 119, 242, 0.1), rgba(255, 255, 255, 0.96) 42%),
+    #ffffff !important;
+}
+
+.vasiq-feed-card-intro .MuiTypography-h5 {
+  font-size: 1.12rem;
+}
+
+.vasiq-feed-card-composer {
+  border-radius: 20px !important;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08) !important;
+}
+
+.vasiq-feed-card-filters .MuiCardContent-root {
+  padding: 22px !important;
+}
+
+.vasiq-feed-chip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 3px;
+  scrollbar-width: none;
+}
+
+.vasiq-feed-chip-row::-webkit-scrollbar {
+  display: none;
+}
+
+.vasiq-feed-chip-row .MuiChip-root {
+  flex: 0 0 auto;
+  height: 32px;
+  border-radius: 999px;
+}
+
+.vasiq-feed-post-shell > * {
+  border: 1px solid rgba(209, 213, 219, 0.78) !important;
+  border-radius: 18px !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07) !important;
+  backdrop-filter: blur(14px);
+}
+
+.vasiq-feed-card-rail {
+  border-radius: 18px !important;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06) !important;
+}
+
+.vasiq-feed-card-rail .MuiCardContent-root {
+  padding: 15px !important;
+}
+
+.vasiq-feed-card-rail .MuiTypography-h6 {
+  font-size: 1rem;
+}
+
+.vasiq-feed-card-rail .MuiPaper-root {
+  border-radius: 14px !important;
+  background: #f7f8fa !important;
+}
+
+.vasiq-feed-card-score {
+  border: 0 !important;
+  background: linear-gradient(145deg, #1c2b45, #111827) !important;
+  color: #fff;
+}
+
+@media (max-width: 720px) {
+  .vasiq-feed-page {
+    padding: 8px 0 calc(106px + env(safe-area-inset-bottom, 0px)) !important;
+    background: #f0f2f5 !important;
+  }
+
+  .vasiq-feed-container {
+    padding: 0 !important;
+  }
+
+  .vasiq-feed-grid {
+    gap: 12px !important;
+  }
+
+  .vasiq-feed-main-stack,
+  .vasiq-feed-post-list {
+    gap: 12px !important;
+  }
+
+  .vasiq-feed-card {
+    border-radius: 18px !important;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06) !important;
+  }
+
+  .vasiq-feed-card .MuiCardContent-root {
+    padding: 14px !important;
+  }
+
+  .vasiq-feed-card-intro {
+    display: none !important;
+  }
+
+  .vasiq-feed-card-composer {
+    border-radius: 20px !important;
+  }
+
+  .vasiq-feed-card-composer .MuiCardContent-root {
+    padding: 14px !important;
+  }
+
+  .vasiq-feed-card-composer .MuiAvatar-root {
+    width: 38px !important;
+    height: 38px !important;
+  }
+
+  .vasiq-feed-card-composer .MuiTypography-root {
+    min-width: 0;
+  }
+
+  .vasiq-feed-card-composer .MuiFormControl-root {
+    width: 100% !important;
+  }
+
+  .vasiq-feed-card-composer .MuiOutlinedInput-root {
+    border-radius: 16px !important;
+  }
+
+  .vasiq-feed-card-composer textarea {
+    min-height: 82px !important;
+  }
+
+  .vasiq-feed-card-composer .MuiButton-root {
+    min-height: 38px;
+    padding-inline: 12px;
+    border-radius: 999px !important;
+    flex: 0 0 auto;
+  }
+
+  .vasiq-feed-card-filters .MuiCardContent-root {
+    padding: 16px !important;
+  }
+
+  .vasiq-feed-card-filters .MuiTypography-body2 {
+    font-size: 0.86rem;
+  }
+
+  .vasiq-feed-chip-row {
+    margin-inline: -2px;
+    padding: 2px 2px 4px;
+  }
+
+  .vasiq-feed-chip-row .MuiChip-root {
+    height: 30px;
+    font-size: 0.78rem;
+  }
+
+  .vasiq-feed-post-shell > * {
+    border-radius: 18px !important;
+    box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06) !important;
+  }
+
+  .vasiq-feed-post-shell .MuiCardContent-root {
+    padding: 14px !important;
+  }
+
+  .vasiq-feed-post-shell .MuiAvatar-root {
+    width: 42px;
+    height: 42px;
+  }
+
+  .vasiq-feed-post-shell .MuiTypography-h6 {
+    font-size: 1rem;
+  }
+
+  .vasiq-feed-post-shell .MuiChip-root {
+    height: 26px;
+    font-size: 0.72rem;
+  }
+
+  .vasiq-feed-post-shell .MuiButton-root {
+    min-height: 34px;
+    border-radius: 999px !important;
+    font-size: 0.78rem;
+  }
+
+  .vasiq-feed-post-shell .MuiTextField-root .MuiOutlinedInput-root {
+    border-radius: 16px !important;
+  }
+
+  :root[data-theme='dark'] .vasiq-feed-page {
+    color: #e5edf7;
+    background:
+      radial-gradient(circle at 12% -4%, rgba(16, 185, 129, 0.2), transparent 30%),
+      radial-gradient(circle at 100% 8%, rgba(14, 165, 233, 0.16), transparent 28%),
+      linear-gradient(180deg, #020617 0%, #0f172a 48%, #111827 100%) !important;
+  }
+
+  :root[data-theme='dark'] .vasiq-feed-card,
+  :root[data-theme='dark'] .vasiq-feed-post-shell > * {
+    color: #e5edf7 !important;
+    border-color: rgba(71, 85, 105, 0.62) !important;
+    background:
+      linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.9)) !important;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32) !important;
+  }
+
+  :root[data-theme='dark'] .vasiq-feed-card .MuiTypography-root,
+  :root[data-theme='dark'] .vasiq-feed-post-shell .MuiTypography-root,
+  :root[data-theme='dark'] .vasiq-feed-card .MuiFormLabel-root,
+  :root[data-theme='dark'] .vasiq-feed-card .MuiSelect-select,
+  :root[data-theme='dark'] .vasiq-feed-card .MuiInputBase-input {
+    color: #f8fafc !important;
+  }
+
+  :root[data-theme='dark'] .vasiq-feed-card .MuiTypography-body2,
+  :root[data-theme='dark'] .vasiq-feed-card .MuiTypography-caption,
+  :root[data-theme='dark'] .vasiq-feed-post-shell .MuiTypography-body2,
+  :root[data-theme='dark'] .vasiq-feed-post-shell .MuiTypography-caption {
+    color: #aab7ca !important;
+  }
+
+  :root[data-theme='dark'] .vasiq-feed-card .MuiOutlinedInput-root,
+  :root[data-theme='dark'] .vasiq-feed-card .MuiPaper-root,
+  :root[data-theme='dark'] .vasiq-feed-post-shell .MuiOutlinedInput-root,
+  :root[data-theme='dark'] .vasiq-feed-post-shell .MuiPaper-root {
+    color: #f8fafc !important;
+    border-color: rgba(71, 85, 105, 0.62) !important;
+    background: rgba(2, 6, 23, 0.58) !important;
+  }
+
+  :root[data-theme='dark'] .vasiq-feed-card .MuiOutlinedInput-notchedOutline,
+  :root[data-theme='dark'] .vasiq-feed-post-shell .MuiOutlinedInput-notchedOutline {
+    border-color: rgba(71, 85, 105, 0.72) !important;
+  }
+
+  :root[data-theme='dark'] .vasiq-feed-card .MuiChip-root,
+  :root[data-theme='dark'] .vasiq-feed-post-shell .MuiChip-root {
+    border-color: rgba(96, 165, 250, 0.28) !important;
+    color: #dbeafe !important;
+    background: rgba(30, 41, 59, 0.78) !important;
+  }
+
+  :root[data-theme='dark'] .vasiq-feed-card .MuiChip-colorPrimary,
+  :root[data-theme='dark'] .vasiq-feed-post-shell .MuiChip-colorPrimary,
+  :root[data-theme='dark'] .vasiq-feed-card .MuiButton-contained {
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #0f766e, #10b981) !important;
+  }
+
+  :root[data-theme='dark'] .vasiq-feed-card .MuiButton-outlined,
+  :root[data-theme='dark'] .vasiq-feed-post-shell .MuiButton-outlined {
+    color: #bfdbfe !important;
+    border-color: rgba(96, 165, 250, 0.38) !important;
+    background: rgba(15, 23, 42, 0.54) !important;
+  }
+}
+
+@media (min-width: 600px) {
+  .vasiq-feed-page {
+    padding: 22px;
+  }
+
+  .vasiq-feed-main-stack {
+    gap: 16px;
+  }
+
+  .vasiq-feed-chip-row {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+
+  .vasiq-feed-card .MuiCardContent-root {
+    padding: 18px !important;
+  }
+}
+
+@media (min-width: 1100px) {
+  .page-shell {
+    align-content: stretch;
+    height: calc(100dvh - (var(--shell-padding) * 2));
+    overflow: hidden;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .page-shell-content {
+    min-height: 0;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  .vasiq-feed-page {
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 0;
+    padding: 22px 24px 0;
+    overflow: hidden;
+  }
+
+  .vasiq-feed-container,
+  .vasiq-feed-grid {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .vasiq-feed-grid {
+    grid-template-columns: minmax(0, 660px) 300px;
+    justify-content: center;
+    align-items: stretch;
+    gap: 22px;
+  }
+
+  .vasiq-feed-main,
+  .vasiq-feed-rail {
+    box-sizing: border-box;
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: auto;
+    scroll-padding-bottom: 120px;
+    scrollbar-width: thin;
+  }
+
+  .vasiq-feed-main-stack::after,
+  .vasiq-feed-rail-stack::after {
+    content: '';
+    display: block;
+    height: 120px;
+  }
+
+  .vasiq-feed-main {
+    padding-right: 5px;
+    scrollbar-color: rgba(24, 119, 242, 0.26) transparent;
+  }
+
+  .vasiq-feed-rail {
+    display: block;
+    padding-right: 4px;
+    scrollbar-color: rgba(15, 23, 42, 0.18) transparent;
+  }
+
+  .vasiq-feed-main::-webkit-scrollbar,
+  .vasiq-feed-rail::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .vasiq-feed-main::-webkit-scrollbar-thumb,
+  .vasiq-feed-rail::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+  }
+
+  .vasiq-feed-main::-webkit-scrollbar-thumb {
+    background: rgba(24, 119, 242, 0.22);
+  }
+
+  .vasiq-feed-rail::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.16);
+  }
+}
+
+@media (max-width: 1099px) {
+  .page-shell-frame {
+    top: 0;
+  }
+}
+
+/* Feed structure refresh: compact social feed with dashboard-grade surfaces. */
+.vasiq-feed-page {
+  padding: 18px 0 0 !important;
+  background: transparent !important;
+}
+
+.vasiq-feed-container {
+  max-width: 1088px;
+  padding-inline: 0 !important;
+}
+
+.vasiq-feed-grid {
+  gap: 22px;
+  align-items: start;
+}
+
+.vasiq-feed-main-stack {
+  gap: 14px;
+}
+
+.vasiq-feed-post-list {
+  gap: 14px;
+}
+
+.vasiq-feed-card,
+.vasiq-feed-post-shell > * {
+  color: #151c2f !important;
+  border: 1px solid rgba(32, 42, 62, 0.1) !important;
+  border-radius: 22px !important;
+  background: rgba(255, 253, 248, 0.95) !important;
+  box-shadow: 0 14px 34px rgba(30, 41, 59, 0.08) !important;
+  backdrop-filter: blur(12px);
+}
+
+.vasiq-feed-card .MuiCardContent-root {
+  padding: 18px !important;
+}
+
+.vasiq-feed-card-intro {
+  min-height: 152px;
+  color: #ffffff !important;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(255, 255, 255, 0.24), transparent 20%),
+    linear-gradient(135deg, #151c2f 0%, #0f766e 54%, #12b3a8 100%) !important;
+  box-shadow: 0 18px 42px rgba(21, 28, 47, 0.18) !important;
+}
+
+.vasiq-feed-card-intro .MuiCardContent-root {
+  padding: 20px !important;
+}
+
+.vasiq-feed-card-intro .MuiAvatar-root {
+  width: 46px !important;
+  height: 46px !important;
+  color: #151c2f !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+}
+
+.vasiq-feed-card-intro .MuiTypography-root {
+  color: #ffffff !important;
+}
+
+.vasiq-feed-card-intro .MuiTypography-h5 {
+  max-width: 460px;
+  font-size: clamp(1.45rem, 2.4vw, 2.1rem) !important;
+  line-height: 1.02;
+}
+
+.vasiq-feed-card-intro .MuiChip-root {
+  height: 28px;
+  color: #151c2f !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+}
+
+.vasiq-feed-card-composer {
+  border-radius: 22px !important;
+}
+
+.vasiq-feed-card-composer .MuiCardContent-root {
+  padding: 18px !important;
+}
+
+.vasiq-feed-card-composer .MuiAvatar-root {
+  width: 44px !important;
+  height: 44px !important;
+}
+
+.vasiq-feed-card-composer .MuiChip-root {
+  height: 30px;
+  font-weight: 900;
+}
+
+.vasiq-feed-card-composer .MuiFormControl-root {
+  width: min(100%, 240px) !important;
+}
+
+.vasiq-feed-card-composer .MuiOutlinedInput-root {
+  min-height: 44px;
+  border-radius: 16px !important;
+  background: #f8f5ef !important;
+}
+
+.vasiq-feed-card-composer textarea {
+  min-height: 72px !important;
+}
+
+.vasiq-feed-card-composer .MuiButton-root {
+  min-height: 38px;
+  border-radius: 999px !important;
+  text-transform: none;
+}
+
+.vasiq-feed-card-filters {
+  background: rgba(255, 253, 248, 0.88) !important;
+}
+
+.vasiq-feed-card-filters .MuiCardContent-root {
+  padding: 20px !important;
+}
+
+.vasiq-feed-card-filters .MuiTypography-h5 {
+  font-size: 1.28rem;
+}
+
+.vasiq-feed-chip-row {
+  gap: 8px;
+  padding: 2px 1px 0;
+}
+
+.vasiq-feed-chip-row .MuiChip-root {
+  height: 31px;
+  border-color: rgba(32, 42, 62, 0.16) !important;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.vasiq-feed-post-shell > * {
+  border-radius: 22px !important;
+}
+
+.vasiq-feed-post-shell .MuiCardContent-root {
+  padding: 18px !important;
+}
+
+.vasiq-feed-post-shell .MuiAvatar-root {
+  width: 44px;
+  height: 44px;
+}
+
+.vasiq-feed-post-shell .MuiTypography-h6 {
+  font-size: 1.02rem;
+}
+
+.vasiq-feed-post-shell .MuiButton-root {
+  min-height: 34px;
+  border-radius: 999px !important;
+  text-transform: none;
+}
+
+.vasiq-feed-post-shell .MuiTextField-root .MuiOutlinedInput-root {
+  border-radius: 16px !important;
+  background: #f8f5ef !important;
+}
+
+.vasiq-feed-post-shell .MuiPaper-root {
+  border-radius: 18px !important;
+  background: #f8f5ef !important;
+}
+
+.vasiq-feed-card-rail {
+  border-radius: 22px !important;
+  background: rgba(255, 253, 248, 0.9) !important;
+}
+
+.vasiq-feed-card-rail .MuiCardContent-root {
+  padding: 18px !important;
+}
+
+.vasiq-feed-card-rail .MuiTypography-h6 {
+  font-size: 1.08rem;
+  line-height: 1.15;
+}
+
+.vasiq-feed-card-rail .MuiAvatar-root {
+  width: 42px !important;
+  height: 42px !important;
+}
+
+.vasiq-feed-card-rail .MuiPaper-root {
+  border: 1px solid rgba(32, 42, 62, 0.08) !important;
+  border-radius: 16px !important;
+  background: #f8f5ef !important;
+}
+
+.vasiq-feed-card-score {
+  border-color: transparent !important;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(244, 189, 83, 0.18), transparent 32%),
+    linear-gradient(135deg, #151c2f, #28334b) !important;
+  box-shadow: 0 18px 40px rgba(21, 28, 47, 0.18) !important;
+}
+
+.vasiq-feed-card-score .MuiCardContent-root {
+  padding: 18px !important;
+}
+
+@media (min-width: 1100px) {
+  .page-shell {
+    height: calc(100dvh - (var(--shell-padding) * 2));
+    overflow: hidden;
+  }
+
+  .page-shell-content {
+    padding: 0 18px 0;
+    overflow: hidden;
+  }
+
+  .vasiq-feed-page {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .vasiq-feed-container,
+  .vasiq-feed-grid {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .vasiq-feed-grid {
+    grid-template-columns: minmax(0, 690px) 304px;
+    justify-content: center;
+    align-items: stretch;
+  }
+
+  .vasiq-feed-main,
+  .vasiq-feed-rail {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    scroll-padding-bottom: 180px;
+  }
+
+  .vasiq-feed-main {
+    padding-right: 6px;
+  }
+
+  .vasiq-feed-rail {
+    display: block;
+    padding-right: 4px;
+  }
+
+  .vasiq-feed-main-stack::after,
+  .vasiq-feed-rail-stack::after {
+    height: 180px;
+  }
+
+  .vasiq-feed-main::-webkit-scrollbar,
+  .vasiq-feed-rail::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  .vasiq-feed-main::-webkit-scrollbar-track,
+  .vasiq-feed-rail::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .vasiq-feed-main::-webkit-scrollbar-thumb,
+  .vasiq-feed-rail::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(15, 118, 110, 0.22);
+  }
+}
+
+@media (max-width: 1099px) {
+  .vasiq-feed-container {
+    max-width: 720px;
+  }
+
+  .vasiq-feed-card-intro {
+    min-height: 132px;
+  }
+}
+
+@media (max-width: 720px) {
+  .vasiq-feed-page {
+    padding: 8px 0 calc(108px + env(safe-area-inset-bottom, 0px)) !important;
+    background: transparent !important;
+  }
+
+  .vasiq-feed-container {
+    max-width: 100%;
+  }
+
+  .vasiq-feed-card,
+  .vasiq-feed-post-shell > * {
+    border-radius: 20px !important;
+    box-shadow: 0 10px 26px rgba(30, 41, 59, 0.08) !important;
+  }
+
+  .vasiq-feed-card .MuiCardContent-root,
+  .vasiq-feed-post-shell .MuiCardContent-root {
+    padding: 14px !important;
+  }
+
+  .vasiq-feed-card-intro {
+    display: none !important;
+  }
+
+  .vasiq-feed-card-composer .MuiFormControl-root {
+    width: 100% !important;
+  }
+
+  .vasiq-feed-card-composer textarea {
+    min-height: 82px !important;
+  }
+
+  .vasiq-feed-card-filters .MuiCardContent-root {
+    padding: 16px !important;
+  }
+}
+
+:root[data-theme='dark'] .vasiq-feed-card,
+:root[data-theme='dark'] .vasiq-feed-post-shell > * {
+  color: #e5edf7 !important;
+  border-color: rgba(71, 85, 105, 0.54) !important;
+  background: rgba(15, 23, 42, 0.88) !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.32) !important;
+}
+
+:root[data-theme='dark'] .vasiq-feed-card-intro {
+  background:
+    radial-gradient(circle at 16% 18%, rgba(255, 255, 255, 0.13), transparent 20%),
+    linear-gradient(135deg, #0f172a 0%, #0d9488 56%, #0f766e 100%) !important;
+}
+
+:root[data-theme='dark'] .vasiq-feed-card-composer .MuiOutlinedInput-root,
+:root[data-theme='dark'] .vasiq-feed-post-shell .MuiTextField-root .MuiOutlinedInput-root,
+:root[data-theme='dark'] .vasiq-feed-card-rail .MuiPaper-root,
+:root[data-theme='dark'] .vasiq-feed-post-shell .MuiPaper-root {
+  background: rgba(2, 6, 23, 0.62) !important;
+}

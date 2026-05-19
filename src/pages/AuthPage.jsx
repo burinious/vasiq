@@ -1,19 +1,74 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
+import {
+  Alert,
+  Autocomplete,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Checkbox,
+  Chip,
+  Container,
+  FormControlLabel,
+  InputAdornment,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import AlternateEmailRoundedIcon from '@mui/icons-material/AlternateEmailRounded';
+import LockRoundedIcon from '@mui/icons-material/LockRounded';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+import VerifiedUserRoundedIcon from '@mui/icons-material/VerifiedUserRounded';
 import Loader from '../components/layout/Loader';
 import { useAuth } from '../context/AuthContext';
+import {
+  NIGERIAN_LEVELS,
+  NIGERIAN_PROGRAMMES,
+  NIGERIAN_UNIVERSITIES,
+} from '../data/nigeriaAcademics';
 import {
   getReadableAuthError,
   loginWithEmail,
   registerWithEmail,
 } from '../firebase/auth';
+import { glassCardSx, pageBgSx, primaryButtonSx, softInputSx } from '../styles/premiumTheme';
 
 const initialRegisterState = {
   email: '',
   password: '',
+  university: '',
+  department: '',
+  level: '',
 };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const universityOptions = NIGERIAN_UNIVERSITIES.map((university) => university.name);
+const courseOptions = NIGERIAN_PROGRAMMES;
+
+const authFieldSx = {
+  ...softInputSx,
+  '& .MuiOutlinedInput-root': {
+    ...softInputSx['& .MuiOutlinedInput-root'],
+    minHeight: 56,
+    borderRadius: 4,
+    background:
+      'linear-gradient(145deg, rgba(255,255,255,0.94), rgba(248,250,252,0.82))',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.72), 0 10px 24px rgba(15,23,42,0.05)',
+  },
+  '& .MuiInputAdornment-root svg': {
+    color: '#0f766e',
+  },
+};
+
+const authSubmitButtonSx = {
+  ...primaryButtonSx,
+  minHeight: 54,
+  justifyContent: 'space-between',
+  px: 2.2,
+  boxShadow: '0 18px 38px rgba(15,118,110,0.32)',
+};
 
 function getEmailValidationError(email) {
   const trimmedEmail = email.trim().toLowerCase();
@@ -102,9 +157,21 @@ function AuthPage() {
     const passwordError = getPasswordValidationError(registerValues.password, {
       strict: true,
     });
+    const selectedUniversity = registerValues.university.trim();
+    const schoolError = !selectedUniversity
+      ? 'Select your university.'
+      : !universityOptions.includes(selectedUniversity)
+        ? 'Choose your university from the list.'
+      : !registerValues.department
+        ? 'Select your course of discipline.'
+      : !courseOptions.includes(registerValues.department)
+        ? 'Choose your course of discipline from the list.'
+        : !registerValues.level
+          ? 'Select your level.'
+          : '';
 
-    if (emailError || passwordError) {
-      setError(emailError || passwordError);
+    if (emailError || passwordError || schoolError) {
+      setError(emailError || passwordError || schoolError);
       setStatus('');
       return;
     }
@@ -132,195 +199,314 @@ function AuthPage() {
   };
 
   return (
-    <div className="auth-layout">
-      <div className="auth-sticker-field" aria-hidden="true">
-        <svg className="auth-sticker auth-sticker-cap" viewBox="0 0 96 96" role="img">
-          <path d="M10 35 48 18l38 17-38 17L10 35Z" />
-          <path d="M26 45v17c0 7 10 13 22 13s22-6 22-13V45" />
-          <path d="M78 39v22" />
-          <path d="M74 63h8l-4 10-4-10Z" />
-        </svg>
-        <svg className="auth-sticker auth-sticker-book" viewBox="0 0 96 96" role="img">
-          <path d="M20 22h28c7 0 12 5 12 12v42H32c-7 0-12-5-12-12V22Z" />
-          <path d="M60 34c0-7 5-12 12-12h4v54h-4c-7 0-12-5-12-12V34Z" />
-          <path d="M30 36h18M30 49h18M70 36h6" />
-        </svg>
-        <svg className="auth-sticker auth-sticker-building" viewBox="0 0 96 96" role="img">
-          <path d="M14 76h68" />
-          <path d="M20 42h56v34H20V42Z" />
-          <path d="M12 42 48 20l36 22H12Z" />
-          <path d="M30 52v24M42 52v24M54 52v24M66 52v24" />
-          <path d="M40 35h16" />
-        </svg>
-        <svg className="auth-sticker auth-sticker-pencil" viewBox="0 0 96 96" role="img">
-          <path d="M23 68 64 27l12 12-41 41-16 4 4-16Z" />
-          <path d="m57 34 12 12" />
-          <path d="M19 84h34" />
-        </svg>
-      </div>
-      <section className="hero-card auth-hero-shell">
-        <div className="auth-hero-panel">
-          <div className="auth-hero-copy">
-            <span className="brand-badge">varsiq</span>
-            <h1>The live campus pulse for updates, groups, and student momentum.</h1>
-            <p>
-              Catch urgent class changes, hostel gist, events, opportunities, and the
-              conversations students actually open every day. VASIQ is built to feel like
-              your campus, not just another random social app.
-            </p>
-            <div className="auth-hero-badges">
-              <span>Urgent campus updates</span>
-              <span>Useful groups over noisy chats</span>
-              <span>Built for student life</span>
-            </div>
-            <div className="auth-hero-grid" aria-hidden="true">
-              <article className="auth-hero-card auth-hero-card-feature auth-hero-side-banner">
-                <span>Inside VASIQ</span>
-                <strong>One place for the updates students keep chasing in scattered chats.</strong>
-                <div className="auth-hero-points">
-                  <p>Academic shifts and deadline gist</p>
-                  <p>Hostel notices and urgent campus signal</p>
-                  <p>Events, opportunities, and useful circles</p>
-                </div>
-              </article>
-            </div>
-          </div>
+    <Box className="mobile-auth-page" sx={{ ...pageBgSx, minHeight: '100vh', display: 'grid', alignItems: 'center', py: { xs: 3, md: 6 } }}>
+      <Container className="mobile-auth-container" maxWidth="lg">
+        <Card className="mobile-auth-shell" sx={{ ...glassCardSx, overflow: 'hidden' }}>
+          <Box className="mobile-auth-grid" sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1.05fr 0.95fr' } }}>
+            <Box
+              className="mobile-auth-hero"
+              sx={{
+                p: { xs: 3, md: 5 },
+                color: '#fff',
+                background:
+                  'radial-gradient(circle at top left, rgba(255,255,255,0.32), transparent 28%), linear-gradient(135deg, #0f766e, #10b981 56%, #14b8a6)',
+                minHeight: { md: 640 },
+                display: 'grid',
+                alignContent: 'space-between',
+                gap: 4,
+              }}
+            >
+              <Stack className="mobile-auth-hero-copy" spacing={2}>
+                <Chip label="VASIQ" sx={{ width: 'fit-content', color: '#fff', bgcolor: 'rgba(255,255,255,0.16)', fontWeight: 950, letterSpacing: 1.2 }} />
+                <Typography variant="h2" sx={{ fontWeight: 950, lineHeight: 1.02, fontSize: { xs: '2.35rem', md: '4rem' } }}>
+                  The live campus pulse for student momentum.
+                </Typography>
+                <Typography sx={{ color: 'rgba(255,255,255,0.86)', maxWidth: 620, fontSize: '1.02rem', lineHeight: 1.75 }}>
+                  Catch urgent class changes, hostel gist, events, opportunities, and the conversations students actually open every day.
+                </Typography>
+                <Stack className="mobile-auth-badges" direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {['Urgent updates', 'Useful groups', 'Student life'].map((item) => (
+                    <Chip key={item} label={item} sx={{ color: '#fff', bgcolor: 'rgba(255,255,255,0.16)', fontWeight: 900 }} />
+                  ))}
+                </Stack>
+              </Stack>
+              <Paper className="mobile-auth-note" elevation={0} sx={{ p: 2.4, borderRadius: 5, bgcolor: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.18)', color: '#fff', backdropFilter: 'blur(16px)' }}>
+                <Typography variant="overline" sx={{ fontWeight: 950, letterSpacing: 1.4 }}>Inside VASIQ</Typography>
+                <Typography variant="h5" sx={{ fontWeight: 950, mt: 0.5 }}>One place for updates students keep chasing in scattered chats.</Typography>
+              </Paper>
+            </Box>
 
-          <section className="auth-card panel">
-            <div className="auth-card-heading">
-              <span className="eyebrow">Access</span>
-              <h2>Enter the campus pulse</h2>
-              <p>
-                Use your email to sign in or create an account, then verify it before joining
-                the live student network.
-              </p>
-            </div>
-            <div className="auth-tabs">
-              <button
-                type="button"
-                className={mode === 'login' ? 'tab-active' : ''}
-                onClick={() => {
-                  setMode('login');
-                  setError('');
-                  setStatus('');
-                }}
-              >
-                Login
-              </button>
-              <button
-                type="button"
-                className={mode === 'register' ? 'tab-active' : ''}
-                onClick={() => {
-                  setMode('register');
-                  setError('');
-                  setStatus('');
-                }}
-              >
-                Create account
-              </button>
-            </div>
+            <CardContent className="mobile-auth-form-panel" sx={{ p: { xs: 2.5, md: 4 }, display: 'grid', alignContent: 'center' }}>
+              <Stack className="mobile-auth-form-stack" spacing={2.4}>
+                <Box className="mobile-auth-heading">
+                  <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 950, letterSpacing: 1.2 }}>Access</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 950, color: '#0f172a' }}>Enter the campus pulse</Typography>
+                  <Typography sx={{ color: '#64748b', mt: 0.8 }}>
+                    Use your email to sign in or create an account, then verify it before joining the live student network.
+                  </Typography>
+                </Box>
 
-            {mode === 'login' ? (
-              <form className="auth-form" onSubmit={handleLogin}>
-                <input
-                  className="input"
-                  type="email"
-                  placeholder="School email"
-                  value={loginValues.email}
-                  onChange={(event) =>
-                    setLoginValues((current) => ({ ...current, email: event.target.value }))
-                  }
-                  required
-                />
-                <div className="password-field">
-                  <input
-                    className="input"
-                    type={showLoginPassword ? 'text' : 'password'}
-                    placeholder="Password"
-                    value={loginValues.password}
-                    onChange={(event) =>
-                      setLoginValues((current) => ({ ...current, password: event.target.value }))
-                    }
-                    required
-                  />
-                  <button
+                <Stack className="mobile-auth-tabs" direction="row" spacing={1}>
+                  <Button
                     type="button"
-                    className="password-toggle"
-                    onClick={() => setShowLoginPassword((current) => !current)}
+                    variant={mode === 'login' ? 'contained' : 'outlined'}
+                    onClick={() => {
+                      setMode('login');
+                      setError('');
+                      setStatus('');
+                    }}
+                    sx={{ borderRadius: 999, fontWeight: 900 }}
                   >
-                    {showLoginPassword ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-                {error ? <p className="error-text">{error}</p> : null}
-                {status ? <p className="status-text">{status}</p> : null}
-                <button className="primary-button" type="submit" disabled={busy}>
-                  {busy ? 'Signing in...' : 'Login'}
-                </button>
-              </form>
-            ) : (
-              <form className="auth-form" onSubmit={handleRegister}>
-                <input
-                  className="input"
-                  type="email"
-                  placeholder="Email"
-                  value={registerValues.email}
-                  onChange={(event) =>
-                    setRegisterValues((current) => ({ ...current, email: event.target.value }))
-                  }
-                  required
-                />
-                <div className="password-field">
-                  <input
-                    className="input"
-                    type={showRegisterPassword ? 'text' : 'password'}
-                    minLength={8}
-                    placeholder="Password"
-                    value={registerValues.password}
-                    onChange={(event) =>
-                      setRegisterValues((current) => ({ ...current, password: event.target.value }))
-                    }
-                    required
-                  />
-                  <button
+                    Login
+                  </Button>
+                  <Button
                     type="button"
-                    className="password-toggle"
-                    onClick={() => setShowRegisterPassword((current) => !current)}
+                    variant={mode === 'register' ? 'contained' : 'outlined'}
+                    onClick={() => {
+                      setMode('register');
+                      setError('');
+                      setStatus('');
+                    }}
+                    sx={{ borderRadius: 999, fontWeight: 900 }}
                   >
-                    {showRegisterPassword ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-                <p className="helper-text">
-                  Use a valid email address. You will need to verify it before you can log in
-                  successfully. Password must be at least 8 characters and include a number.
-                </p>
-                <label className="legal-consent-option">
-                  <input
-                    type="checkbox"
-                    checked={acceptedLegal}
-                    onChange={(event) => setAcceptedLegal(event.target.checked)}
-                    required
-                  />
-                  <span>
-                    I agree to the <Link to="/terms">Terms and Conditions</Link> and{' '}
-                    <Link to="/privacy">Privacy Policy</Link>. I understand VASIQ may moderate
-                    content and restrict accounts that break community rules.
-                  </span>
-                </label>
-                {error ? <p className="error-text">{error}</p> : null}
-                {status ? <p className="status-text">{status}</p> : null}
-                <button className="primary-button" type="submit" disabled={busy}>
-                  {busy ? 'Creating account...' : 'Create account'}
-                </button>
-              </form>
-            )}
-            <div className="auth-legal-links">
-              <Link to="/terms">Terms and Conditions</Link>
-              <Link to="/privacy">Privacy Policy</Link>
-            </div>
-          </section>
-        </div>
-      </section>
-    </div>
+                    Create account
+                  </Button>
+                </Stack>
+
+                {mode === 'login' ? (
+                  <Stack className="mobile-auth-form mobile-auth-login-form" component="form" onSubmit={handleLogin} spacing={1.6}>
+                    <Paper
+                      elevation={0}
+                      className="mobile-auth-login-strip"
+                      sx={{
+                        p: 1.45,
+                        borderRadius: 3.5,
+                        border: '1px solid rgba(16,185,129,0.16)',
+                        background:
+                          'linear-gradient(135deg, rgba(15,118,110,0.10), rgba(14,165,233,0.08), rgba(255,255,255,0.86))',
+                      }}
+                    >
+                      <Stack direction="row" spacing={1.2} alignItems="center">
+                        <Box className="mobile-auth-login-strip-icon">
+                          <VerifiedUserRoundedIcon fontSize="small" />
+                        </Box>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography className="mobile-auth-login-strip-title" sx={{ fontWeight: 950, color: '#0f172a' }}>
+                            Welcome back
+                          </Typography>
+                          <Typography className="mobile-auth-login-strip-copy" variant="body2" sx={{ color: '#64748b', mt: 0.2 }}>
+                            Continue to your feed, chats, and groups.
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Paper>
+                    <TextField
+                      type="email"
+                      label="Email"
+                      autoComplete="email"
+                      value={loginValues.email}
+                      onChange={(event) => setLoginValues((current) => ({ ...current, email: event.target.value }))}
+                      required
+                      sx={authFieldSx}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <AlternateEmailRoundedIcon fontSize="small" />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <TextField
+                      type={showLoginPassword ? 'text' : 'password'}
+                      label="Password"
+                      autoComplete="current-password"
+                      value={loginValues.password}
+                      onChange={(event) => setLoginValues((current) => ({ ...current, password: event.target.value }))}
+                      required
+                      sx={authFieldSx}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LockRoundedIcon fontSize="small" />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <Button
+                              className="auth-password-toggle"
+                              type="button"
+                              onClick={() => setShowLoginPassword((current) => !current)}
+                              aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                              sx={{ minWidth: 66, borderRadius: 999, fontWeight: 950 }}
+                            >
+                              {showLoginPassword ? 'Hide' : 'Show'}
+                            </Button>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    {error ? <Alert severity="error" sx={{ borderRadius: 3 }}>{error}</Alert> : null}
+                    {status ? <Alert severity="info" sx={{ borderRadius: 3 }}>{status}</Alert> : null}
+                    <Button
+                      variant="contained"
+                      type="submit"
+                      disabled={busy}
+                      endIcon={<ArrowForwardRoundedIcon />}
+                      sx={authSubmitButtonSx}
+                    >
+                      {busy ? 'Signing in...' : 'Login'}
+                    </Button>
+                  </Stack>
+                ) : (
+                  <Stack className="mobile-auth-form" component="form" onSubmit={handleRegister} spacing={1.6}>
+                    <TextField
+                      type="email"
+                      label="Email"
+                      autoComplete="email"
+                      value={registerValues.email}
+                      onChange={(event) => setRegisterValues((current) => ({ ...current, email: event.target.value }))}
+                      required
+                      sx={authFieldSx}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <AlternateEmailRoundedIcon fontSize="small" />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <TextField
+                      type={showRegisterPassword ? 'text' : 'password'}
+                      label="Password"
+                      autoComplete="new-password"
+                      value={registerValues.password}
+                      onChange={(event) => setRegisterValues((current) => ({ ...current, password: event.target.value }))}
+                      inputProps={{ minLength: 8 }}
+                      required
+                      sx={authFieldSx}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <LockRoundedIcon fontSize="small" />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <Button
+                              className="auth-password-toggle"
+                              type="button"
+                              onClick={() => setShowRegisterPassword((current) => !current)}
+                              aria-label={showRegisterPassword ? 'Hide password' : 'Show password'}
+                              sx={{ minWidth: 66, borderRadius: 999, fontWeight: 950 }}
+                            >
+                              {showRegisterPassword ? 'Hide' : 'Show'}
+                            </Button>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <Typography variant="body2" sx={{ color: '#64748b' }}>
+                      Use a valid email address. Password must be at least 8 characters and include a number.
+                    </Typography>
+                    <Autocomplete
+                      disablePortal
+                      autoHighlight
+                      selectOnFocus
+                      clearOnBlur
+                      handleHomeEndKeys
+                      freeSolo={false}
+                      options={universityOptions}
+                      value={registerValues.university || null}
+                      onChange={(_, nextValue) =>
+                        setRegisterValues((current) => ({
+                          ...current,
+                          university: nextValue || '',
+                        }))
+                      }
+                      isOptionEqualToValue={(option, value) => option === value}
+                      noOptionsText="No university found"
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="University"
+                          required
+                          sx={authFieldSx}
+                          placeholder="Start typing, then select"
+                        />
+                      )}
+                      required
+                    />
+                    <Autocomplete
+                      disablePortal
+                      autoHighlight
+                      selectOnFocus
+                      clearOnBlur
+                      handleHomeEndKeys
+                      freeSolo={false}
+                      options={courseOptions}
+                      value={registerValues.department || null}
+                      onChange={(_, nextValue) =>
+                        setRegisterValues((current) => ({
+                          ...current,
+                          department: nextValue || '',
+                        }))
+                      }
+                      isOptionEqualToValue={(option, value) => option === value}
+                      noOptionsText="No programme found"
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Course of discipline"
+                          required
+                          sx={authFieldSx}
+                          placeholder="Start typing, then select"
+                        />
+                      )}
+                      required
+                    />
+                    <TextField
+                      select
+                      label="Level"
+                      value={registerValues.level}
+                      onChange={(event) =>
+                        setRegisterValues((current) => ({ ...current, level: event.target.value }))
+                      }
+                      required
+                      sx={authFieldSx}
+                      SelectProps={{ native: true }}
+                    >
+                      <option value="">Select level</option>
+                      {NIGERIAN_LEVELS.map((level) => (
+                        <option key={level} value={level}>
+                          {level}
+                        </option>
+                      ))}
+                    </TextField>
+                    <FormControlLabel
+                      control={<Checkbox checked={acceptedLegal} onChange={(event) => setAcceptedLegal(event.target.checked)} required />}
+                      label={
+                        <Typography variant="body2" sx={{ color: '#475569' }}>
+                          I agree to the <Link to="/terms">Terms and Conditions</Link> and <Link to="/privacy">Privacy Policy</Link>.
+                        </Typography>
+                      }
+                    />
+                    {error ? <Alert severity="error" sx={{ borderRadius: 3 }}>{error}</Alert> : null}
+                    {status ? <Alert severity="info" sx={{ borderRadius: 3 }}>{status}</Alert> : null}
+                    <Button variant="contained" type="submit" disabled={busy} sx={primaryButtonSx}>
+                      {busy ? 'Creating account...' : 'Create account'}
+                    </Button>
+                  </Stack>
+                )}
+                <Stack className="mobile-auth-links" direction="row" spacing={2} sx={{ color: '#0f766e', fontWeight: 900 }}>
+                  <Link to="/terms">Terms and Conditions</Link>
+                  <Link to="/privacy">Privacy Policy</Link>
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Box>
+        </Card>
+      </Container>
+    </Box>
   );
 }
 

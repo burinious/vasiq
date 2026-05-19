@@ -3,8 +3,8 @@ import { getUserDisplayName } from './userIdentity';
 const gradients = [
   ['#0f766e', '#0891b2'],
   ['#f59e0b', '#ea580c'],
-  ['#2563eb', '#7c3aed'],
-  ['#ec4899', '#f97316'],
+  ['#0f766e', '#10b981'],
+  ['#14b8a6', '#f97316'],
   ['#16a34a', '#0ea5e9'],
   ['#7c2d12', '#dc2626'],
 ];

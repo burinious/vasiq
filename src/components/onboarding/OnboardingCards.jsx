@@ -11,7 +11,7 @@ const onboardingCards = [
   {
     title: 'Join the right circles early',
     label: 'Groups',
-    body: 'Start with the groups that already matter: department, hostel, study circle, builders, fellowship, opportunities, and the circles your friends actually open.',
+    body: 'Start with the groups that already matter: course, hostel, study circle, builders, fellowship, opportunities, and the circles your friends actually open.',
     icon: UsersRound,
   },
   {

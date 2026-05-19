@@ -671,6 +671,10 @@ export async function replyToPostComment(postId, commentId, reply) {
 }
 
 export async function togglePostReplyLike(postId, commentId, replyId, userId) {
+  if (!postId || !commentId || !replyId || !userId) {
+    throw new Error('Unable to like this reply because the reply reference is incomplete.');
+  }
+
   if (!commentId?.startsWith('legacy-')) {
     await runTransaction(db, async (transaction) => {
       const replyRef = doc(db, 'posts', postId, 'comments', commentId, 'replies', replyId);

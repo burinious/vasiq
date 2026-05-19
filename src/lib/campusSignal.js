@@ -3,7 +3,7 @@ export const POST_CATEGORIES = [
     value: 'academic',
     label: 'Classes',
     shortLabel: 'Classes',
-    description: 'Lectures, tests, deadlines, and department updates.',
+    description: 'Lectures, tests, deadlines, and course updates.',
   },
   {
     value: 'materials',
@@ -68,7 +68,7 @@ export const GROUP_TYPES = [
   {
     value: 'academic',
     label: 'Academic',
-    description: 'Departments, classes, notes, revision, and coursework.',
+    description: 'Courses, classes, notes, revision, and coursework.',
   },
   {
     value: 'hostel',

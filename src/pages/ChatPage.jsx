@@ -239,6 +239,7 @@ function ChatPage() {
         users={users}
         selectedChatId={selectedChatId}
         currentUserId={currentUser.uid}
+        currentProfile={profile}
         onSelectChat={handleSelectChat}
       />
 
@@ -246,7 +247,7 @@ function ChatPage() {
         title={selectedUser ? getUserDisplayName(selectedUser) : 'Choose a student'}
         subtitle={
           selectedUser
-            ? `${selectedUser.department} / ${selectedUser.level}`
+            ? `${selectedUser.university || 'University not set'} / ${selectedUser.department || 'Course not set'} / ${selectedUser.level || 'Level not set'}`
             : 'Pick a classmate from the list to start chatting.'
         }
         messages={mergedMessages}

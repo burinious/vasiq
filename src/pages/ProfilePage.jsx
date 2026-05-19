@@ -1,9 +1,40 @@
 import { useEffect, useState } from 'react';
+import { Autocomplete, TextField } from '@mui/material';
 import AvatarUploader from '../components/profile/AvatarUploader';
 import { useAuth } from '../context/AuthContext';
 import { uploadImage } from '../firebase/cloudinary';
 import { updateUserProfile } from '../firebase/firestore';
+import {
+  NIGERIAN_LEVELS,
+  NIGERIAN_PROGRAMMES,
+  NIGERIAN_UNIVERSITIES,
+} from '../data/nigeriaAcademics';
 import { getFallbackNameFromEmail, getUserDisplayName } from '../utils/userIdentity';
+
+const universityOptions = NIGERIAN_UNIVERSITIES.map((university) => university.name);
+const courseOptions = NIGERIAN_PROGRAMMES;
+
+const profileAutocompleteSx = {
+  '& .MuiOutlinedInput-root': {
+    minHeight: 48,
+    borderRadius: '14px',
+    background: 'rgba(255,255,255,0.74)',
+    color: '#0f172a',
+    font: 'inherit',
+    '& fieldset': {
+      borderColor: 'rgba(148, 163, 184, 0.28)',
+    },
+    '&:hover fieldset': {
+      borderColor: 'rgba(15, 118, 110, 0.34)',
+    },
+    '&.Mui-focused fieldset': {
+      borderColor: 'rgba(15, 118, 110, 0.72)',
+    },
+  },
+  '& .MuiInputBase-input': {
+    padding: '12px 10px !important',
+  },
+};
 
 function withTimeout(promise, timeoutMs, message) {
   return new Promise((resolve, reject) => {
@@ -26,11 +57,13 @@ function ProfilePage() {
   const [formValues, setFormValues] = useState({
     fullName: '',
     displayName: '',
+    university: '',
     department: '',
     level: '',
     residence: '',
     statusText: '',
     showDepartment: true,
+    showUniversity: true,
     showLevel: true,
   });
   const [avatarFile, setAvatarFile] = useState(null);
@@ -45,6 +78,7 @@ function ProfilePage() {
   const profileCompletion = Math.round(
     ([
       publicName,
+      formValues.university || profile?.university,
       formValues.department || profile?.department,
       formValues.level || profile?.level,
       formValues.residence || profile?.residence,
@@ -52,19 +86,27 @@ function ProfilePage() {
       avatarPreview,
     ]
       .filter(Boolean).length /
-      6) *
+      7) *
       100,
   );
-  const levelOptions = ['100L', '200L', '300L', '400L', '500L', 'Postgraduate'];
+  const levelOptions = NIGERIAN_LEVELS;
+  const selectedProfileUniversity = universityOptions.includes(formValues.university)
+    ? formValues.university
+    : null;
+  const selectedProfileCourse = courseOptions.includes(formValues.department)
+    ? formValues.department
+    : null;
 
   useEffect(() => {
     setFormValues({
       fullName: profile?.fullName || profile?.name || '',
       displayName: profile?.displayName || profile?.name || '',
+      university: profile?.university || '',
       department: profile?.department || '',
       level: profile?.level || '',
       residence: profile?.residence || '',
       statusText: profile?.statusText || '',
+      showUniversity: profile?.showUniversity !== false,
       showDepartment: profile?.showDepartment !== false,
       showLevel: profile?.showLevel !== false,
     });
@@ -79,6 +121,20 @@ function ProfilePage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const selectedUniversity = formValues.university.trim();
+
+    if (selectedUniversity && !universityOptions.includes(selectedUniversity)) {
+      setStatus('Choose your university from the list.');
+      return;
+    }
+
+    const selectedCourse = formValues.department.trim();
+
+    if (selectedCourse && !courseOptions.includes(selectedCourse)) {
+      setStatus('Choose your course of discipline from the list.');
+      return;
+    }
+
     setBusy(true);
     setStatus('');
 
@@ -98,10 +154,12 @@ function ProfilePage() {
           fullName,
           displayName,
           name: fallbackName,
+          university: formValues.university.trim(),
           department: formValues.department.trim(),
           level: formValues.level,
           residence: formValues.residence.trim(),
           statusText: formValues.statusText.trim(),
+          showUniversity: formValues.showUniversity,
           showDepartment: formValues.showDepartment,
           showLevel: formValues.showLevel,
           avatarUrl,
@@ -132,7 +190,8 @@ function ProfilePage() {
             </p>
             <div className="profile-hero-badges">
               <span>{currentUser.emailVerified ? 'Email verified' : 'Email not verified'}</span>
-              <span>{formValues.showDepartment ? (formValues.department || 'Department pending') : 'Department private'}</span>
+              <span>{formValues.showUniversity ? (formValues.university || 'University pending') : 'University private'}</span>
+              <span>{formValues.showDepartment ? (formValues.department || 'Course pending') : 'Course private'}</span>
               <span>{formValues.showLevel ? (formValues.level || 'Level pending') : 'Level private'}</span>
               <span>{formValues.residence || 'Residence pending'}</span>
             </div>
@@ -149,7 +208,10 @@ function ProfilePage() {
             <div className="profile-hero-meta">
               <strong>{publicName}</strong>
               <p>
-                {formValues.showDepartment ? formValues.department || 'Campus community' : 'Private department'} / {formValues.showLevel ? formValues.level || 'Student' : 'Private level'}
+                {formValues.showUniversity ? formValues.university || 'University pending' : 'Private university'}
+              </p>
+              <p>
+                {formValues.showDepartment ? formValues.department || 'Campus community' : 'Private course'} / {formValues.showLevel ? formValues.level || 'Student' : 'Private level'}
               </p>
               <p>{formValues.residence || 'Residence not set yet'}</p>
             </div>
@@ -194,15 +256,55 @@ function ProfilePage() {
                   />
                 </label>
 
-                <label className="profile-field">
-                  <span>Department</span>
-                  <input
-                    className="input"
-                    value={formValues.department}
-                    onChange={(event) =>
-                      setFormValues((current) => ({ ...current, department: event.target.value }))
+                <label className="profile-field profile-field-autocomplete">
+                  <span>University</span>
+                  <Autocomplete
+                    disablePortal
+                    autoHighlight
+                    selectOnFocus
+                    clearOnBlur
+                    handleHomeEndKeys
+                    freeSolo={false}
+                    options={universityOptions}
+                    value={selectedProfileUniversity}
+                    onChange={(_, nextValue) =>
+                      setFormValues((current) => ({ ...current, university: nextValue || '' }))
                     }
-                    placeholder="Department"
+                    isOptionEqualToValue={(option, value) => option === value}
+                    noOptionsText="No university found"
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="Start typing, then select"
+                        sx={profileAutocompleteSx}
+                      />
+                    )}
+                  />
+                </label>
+
+                <label className="profile-field profile-field-autocomplete">
+                  <span>Course of discipline</span>
+                  <Autocomplete
+                    disablePortal
+                    autoHighlight
+                    selectOnFocus
+                    clearOnBlur
+                    handleHomeEndKeys
+                    freeSolo={false}
+                    options={courseOptions}
+                    value={selectedProfileCourse}
+                    onChange={(_, nextValue) =>
+                      setFormValues((current) => ({ ...current, department: nextValue || '' }))
+                    }
+                    isOptionEqualToValue={(option, value) => option === value}
+                    noOptionsText="No programme found"
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="Start typing, then select"
+                        sx={profileAutocompleteSx}
+                      />
+                    )}
                   />
                 </label>
 
@@ -253,6 +355,23 @@ function ProfilePage() {
                   <label className="profile-visibility-option">
                     <input
                       type="checkbox"
+                      checked={formValues.showUniversity}
+                      onChange={(event) =>
+                        setFormValues((current) => ({
+                          ...current,
+                          showUniversity: event.target.checked,
+                        }))
+                      }
+                    />
+                    <div>
+                      <strong>Show university publicly</strong>
+                      <p>This helps students confirm your campus context before connecting.</p>
+                    </div>
+                  </label>
+
+                  <label className="profile-visibility-option">
+                    <input
+                      type="checkbox"
                       checked={formValues.showDepartment}
                       onChange={(event) =>
                         setFormValues((current) => ({
@@ -262,7 +381,7 @@ function ProfilePage() {
                       }
                     />
                     <div>
-                      <strong>Show department publicly</strong>
+                      <strong>Show course publicly</strong>
                       <p>This can appear on feed cards and chat discovery.</p>
                     </div>
                   </label>
@@ -314,7 +433,10 @@ function ProfilePage() {
           <p className="eyebrow">Overview</p>
           <h3>{publicName}</h3>
           <p>
-            {formValues.showDepartment ? formValues.department || 'Department not set' : 'Department hidden'} / {formValues.showLevel ? formValues.level || 'Level not set' : 'Level hidden'}
+            {formValues.showUniversity ? formValues.university || 'University not set' : 'University hidden'}
+          </p>
+          <p>
+            {formValues.showDepartment ? formValues.department || 'Course not set' : 'Course hidden'} / {formValues.showLevel ? formValues.level || 'Level not set' : 'Level hidden'}
           </p>
           <p>{formValues.residence || 'Residence not added yet'}</p>
           <div className="profile-summary-progress">
@@ -337,8 +459,8 @@ function ProfilePage() {
               <p>Hostel and off-campus context makes gist, logistics, and discovery more relevant.</p>
             </article>
             <article>
-              <strong>Keep your department current</strong>
-              <p>Groups and classmates find you faster when your campus identity is accurate.</p>
+              <strong>Keep your course current</strong>
+              <p>Students in your discipline find you faster when your campus identity is accurate.</p>
             </article>
             <article>
               <strong>Use a living status</strong>

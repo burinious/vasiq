@@ -360,7 +360,7 @@ function GroupsPage() {
             <p className="eyebrow">Group radar</p>
             <h2>Join the circles students already rely on.</h2>
             <p>
-              Treat groups like useful campus infrastructure: department updates, hostel gist,
+              Treat groups like useful campus infrastructure: course updates, hostel gist,
               career leads, builders, and real community momentum.
             </p>
             <div className="groups-overview-tags">

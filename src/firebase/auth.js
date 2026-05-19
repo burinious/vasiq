@@ -57,7 +57,7 @@ function getEmailActionSettings() {
   };
 }
 
-export async function registerWithEmail({ email, password }) {
+export async function registerWithEmail({ email, password, university = '', department = '', level = '' }) {
   await authPersistenceReady;
   const normalizedEmail = email.trim().toLowerCase();
   const credential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
@@ -70,8 +70,9 @@ export async function registerWithEmail({ email, password }) {
       displayName: '',
       fullName: '',
       email: normalizedEmail,
-      department: '',
-      level: '',
+      university: university.trim(),
+      department: department.trim(),
+      level,
       residence: '',
       statusText: '',
       about: '',

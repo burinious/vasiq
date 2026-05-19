@@ -1,6 +1,19 @@
 import { useMemo, useState } from 'react';
+import { Plus } from 'lucide-react';
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Chip,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { getPresenceTheme } from '../../utils/presenceTheme';
 import { getUserDisplayName, getUserFirstName } from '../../utils/userIdentity';
+import { glassCardSx, primaryButtonSx, softInputSx } from '../../styles/premiumTheme';
 
 function getStoryTime(timestamp) {
   const date =
@@ -70,134 +83,179 @@ function StatusBoard({ onCreateStory, profile, stories, storiesReady, users }) {
   };
 
   return (
-    <section className="panel status-board social-stories-panel">
-      <div className="story-panel-header">
-        <div>
-          <p className="eyebrow">Stories</p>
-          <h2>Campus moments</h2>
-        </div>
-        <span className="story-panel-pill">{visibleStories.length} active</span>
-      </div>
+    <Box component="section" sx={{ display: 'grid', gap: { xs: 2, md: 2.4 } }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1}>
+        <Box>
+          <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 950, letterSpacing: 1.2 }}>
+            Stories
+          </Typography>
+          <Typography variant="h5" sx={{ color: '#0f172a', fontWeight: 950 }}>
+            Campus moments
+          </Typography>
+        </Box>
+        <Chip label={`${visibleStories.length} active`} sx={{ borderRadius: 999, fontWeight: 900 }} />
+      </Stack>
 
-      <div className="story-strip social-story-strip">
-        <button
+      <Stack
+        direction="row"
+        spacing={1.5}
+        sx={{
+          mx: { xs: -0.5, sm: 0 },
+          px: { xs: 0.5, sm: 0 },
+          overflowX: 'auto',
+          pb: 0.5,
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
+        }}
+      >
+        <Paper
+          component="button"
           type="button"
-          className="story-card story-card-create"
           onClick={() => setCreating((value) => !value)}
+          elevation={0}
+          sx={{
+            minWidth: { xs: 154, sm: 164 },
+            height: { xs: 188, sm: 196 },
+            p: 1.8,
+            borderRadius: 4,
+            border: '1px dashed rgba(16,185,129,0.45)',
+            bgcolor: 'rgba(255,255,255,0.66)',
+            display: 'grid',
+            alignContent: 'space-between',
+            textAlign: 'left',
+            color: '#0f172a',
+          }}
         >
-          <div className="story-create-art">
-            <span>+</span>
-          </div>
-          <div className="story-card-footer">
-            <strong>Create story</strong>
-            <p>Share a campus moment</p>
-          </div>
-        </button>
+          <Avatar sx={{ bgcolor: 'rgba(15,118,110,0.12)', color: '#0f766e', width: 48, height: 48 }}>
+            <Plus size={23} strokeWidth={2.4} />
+          </Avatar>
+          <Box>
+            <Typography sx={{ fontWeight: 950 }}>Create story</Typography>
+            <Typography variant="body2" sx={{ color: '#64748b' }}>Share a campus moment</Typography>
+          </Box>
+        </Paper>
 
         {visibleStories.map((story) => {
           const theme = getPresenceTheme(story);
           const publicName = story.name || getUserDisplayName(story);
 
           return (
-            <article
+            <Paper
               key={`${story.id || story.userId}-story`}
-              className="story-card"
-              style={theme.cardStyle}
+              elevation={0}
+              sx={{
+                minWidth: { xs: 154, sm: 164 },
+                height: { xs: 188, sm: 196 },
+                p: 1.8,
+                borderRadius: 4,
+                border: '1px solid rgba(255,255,255,0.44)',
+                background: theme.cardStyle?.background || 'linear-gradient(145deg, rgba(255,255,255,0.84), rgba(255,255,255,0.56))',
+                color: theme.cardStyle?.color || '#0f172a',
+                display: 'grid',
+                alignContent: 'space-between',
+                overflow: 'hidden',
+              }}
             >
-              <div className="story-card-top">
-                <div className="story-avatar-ring" style={theme.accentStyle}>
-                  <div className="avatar story-avatar" style={theme.avatarStyle}>
-                    {story.avatarUrl ? (
-                      <img src={story.avatarUrl} alt={publicName} />
-                    ) : (
-                      <span>{publicName?.[0] || 'S'}</span>
-                    )}
-                  </div>
-                </div>
-                <span className="story-card-count">{story.storyTime}</span>
-              </div>
-              <div className="story-card-copy">
-                <strong>{publicName?.split(' ')[0]}</strong>
-                <p>{story.statusText}</p>
-              </div>
-            </article>
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Avatar src={story.avatarUrl || ''} alt={publicName} sx={{ width: 44, height: 44, fontWeight: 950 }}>
+                  {publicName?.[0] || 'S'}
+                </Avatar>
+                <Chip size="small" label={story.storyTime} sx={{ borderRadius: 999, fontWeight: 900, bgcolor: 'rgba(255,255,255,0.48)' }} />
+              </Stack>
+              <Box>
+                <Typography sx={{ fontWeight: 950 }}>{publicName?.split(' ')[0]}</Typography>
+                <Typography variant="body2" sx={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {story.statusText}
+                </Typography>
+              </Box>
+            </Paper>
           );
         })}
-      </div>
+      </Stack>
 
       {creating ? (
-        <form className="comment-form story-create-form" onSubmit={handleSubmitStory}>
-          <div className="comment-input-shell">
-            <input
-              className="input"
-              maxLength={180}
+        <Box component="form" onSubmit={handleSubmitStory}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+            <TextField
+              fullWidth
+              inputProps={{ maxLength: 180 }}
               onChange={(event) => setStoryText(event.target.value)}
               placeholder="Drop quick campus gist, location, update, or moment"
               value={storyText}
+              sx={softInputSx}
             />
-            {storyError ? <span className="status-text">{storyError}</span> : null}
-          </div>
-          <button type="submit" className="secondary-button" disabled={submitting}>
-            {submitting ? 'Posting...' : 'Post story'}
-          </button>
-        </form>
+            <Button type="submit" variant="contained" disabled={submitting} sx={primaryButtonSx}>
+              {submitting ? 'Posting...' : 'Post story'}
+            </Button>
+          </Stack>
+          {storyError ? <Alert severity="error" sx={{ mt: 1, borderRadius: 3 }}>{storyError}</Alert> : null}
+        </Box>
       ) : null}
 
       {featuredStory ? (
-      <div className="story-insight-row">
-        <article className="story-insight-card" style={featuredTheme.cardStyle}>
-          <div className="story-insight-top">
-            <div className="avatar avatar-sm" style={featuredTheme.avatarStyle}>
-              {featuredStory.avatarUrl ? (
-                <img
-                  src={featuredStory.avatarUrl}
-                  alt={featuredStory.name || getUserDisplayName(featuredStory)}
-                />
-              ) : (
-                <span>{(featuredStory.name || getUserDisplayName(featuredStory))[0] || 'S'}</span>
-              )}
-            </div>
-            <div>
-              <p className="eyebrow">Campus now</p>
-              <strong>{featuredStory.name || getUserDisplayName(featuredStory)}</strong>
-            </div>
-          </div>
-          <p className="story-insight-copy">{featuredStory.statusText}</p>
-          <div className="story-insight-tags">
-            <span>{featuredStory.department || 'Campus'}</span>
-            <span>{featuredStory.level || 'Story'}</span>
-            <span>{featuredStory.isLiveStory ? '24h' : 'profile'}</span>
-          </div>
-        </article>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5}>
+          <Paper
+            elevation={0}
+            sx={{
+              ...glassCardSx,
+              p: 2,
+              flex: 1.2,
+              background: featuredTheme.cardStyle?.background || glassCardSx.background,
+              color: featuredTheme.cardStyle?.color || '#0f172a',
+              boxShadow: '0 14px 42px rgba(15,23,42,0.08)',
+            }}
+          >
+            <Stack direction="row" spacing={1.2} alignItems="center">
+              <Avatar src={featuredStory.avatarUrl || ''} alt={featuredStory.name || getUserDisplayName(featuredStory)}>
+                {(featuredStory.name || getUserDisplayName(featuredStory))[0] || 'S'}
+              </Avatar>
+              <Box>
+                <Typography variant="overline" sx={{ fontWeight: 950 }}>Campus now</Typography>
+                <Typography sx={{ fontWeight: 950 }}>{featuredStory.name || getUserDisplayName(featuredStory)}</Typography>
+              </Box>
+            </Stack>
+            <Typography sx={{ mt: 1.5 }}>{featuredStory.statusText}</Typography>
+            <Stack direction="row" spacing={1} mt={1.5} flexWrap="wrap" useFlexGap>
+              <Chip size="small" label={featuredStory.department || 'Campus'} sx={{ borderRadius: 999, fontWeight: 900 }} />
+              <Chip size="small" label={featuredStory.level || 'Story'} sx={{ borderRadius: 999, fontWeight: 900 }} />
+              <Chip size="small" label={featuredStory.isLiveStory ? '24h' : 'profile'} sx={{ borderRadius: 999, fontWeight: 900 }} />
+            </Stack>
+          </Paper>
 
-        <div className="story-micro-grid">
-          {otherStories.slice(0, 3).map((story) => {
-            const theme = getPresenceTheme(story);
-            const publicName = story.name || getUserDisplayName(story);
+          <Stack spacing={1} sx={{ flex: 1 }}>
+            {otherStories.slice(0, 3).map((story) => {
+              const theme = getPresenceTheme(story);
+              const publicName = story.name || getUserDisplayName(story);
 
-            return (
-              <article key={story.id || story.userId} className="story-micro-card" style={theme.cardStyle}>
-                <div className="story-micro-top">
-                  <div className="avatar avatar-sm" style={theme.avatarStyle}>
-                    {story.avatarUrl ? (
-                      <img src={story.avatarUrl} alt={publicName} />
-                    ) : (
-                      <span>{publicName[0] || 'S'}</span>
-                    )}
-                  </div>
-                  <div>
-                    <strong>{getUserFirstName(story)}</strong>
-                    <p>{story.department || 'Campus'}</p>
-                  </div>
-                </div>
-                <p>{story.statusText}</p>
-              </article>
-            );
-          })}
-        </div>
-      </div>
+              return (
+                <Paper
+                  key={story.id || story.userId}
+                  elevation={0}
+                  sx={{
+                    p: 1.4,
+                    borderRadius: 4,
+                    border: '1px solid rgba(255,255,255,0.44)',
+                    background: theme.cardStyle?.background || 'rgba(255,255,255,0.72)',
+                  }}
+                >
+                  <Stack direction="row" spacing={1.1} alignItems="center">
+                    <Avatar src={story.avatarUrl || ''} alt={publicName} sx={{ width: 36, height: 36 }}>
+                      {publicName[0] || 'S'}
+                    </Avatar>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography noWrap sx={{ fontWeight: 950 }}>{getUserFirstName(story)}</Typography>
+                      <Typography noWrap variant="body2" sx={{ color: '#64748b' }}>
+                        {story.statusText}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
+              );
+            })}
+          </Stack>
+        </Stack>
       ) : null}
-    </section>
+    </Box>
   );
 }
 

@@ -40,7 +40,7 @@ const termsSections = [
 const privacySections = [
   {
     title: 'Information We Collect',
-    body: 'VASIQ may collect account information such as email, display name, department, level, avatar, verification status, role, and profile visibility choices. The app also stores content you create, including posts, comments, replies, likes, shares, group membership, group requests, direct messages, group messages, and uploaded media links.',
+    body: 'VASIQ may collect account information such as email, display name, course of discipline, level, avatar, verification status, role, and profile visibility choices. The app also stores content you create, including posts, comments, replies, likes, shares, group membership, group requests, direct messages, group messages, and uploaded media links.',
   },
   {
     title: 'How Information Is Used',
@@ -48,7 +48,7 @@ const privacySections = [
   },
   {
     title: 'Visibility of Content',
-    body: 'Posts, comments, replies, likes, group membership, display names, avatars, departments, and levels may be visible to other signed-in users depending on the feature and your profile settings. Direct messages and group messages are not public feeds, but they may still be stored and may be reviewed where safety, abuse, or technical investigation requires it.',
+    body: 'Posts, comments, replies, likes, group membership, display names, avatars, courses of discipline, and levels may be visible to other signed-in users depending on the feature and your profile settings. Direct messages and group messages are not public feeds, but they may still be stored and may be reviewed where safety, abuse, or technical investigation requires it.',
   },
   {
     title: 'Third-Party Services',
@@ -64,7 +64,7 @@ const privacySections = [
   },
   {
     title: 'Your Choices',
-    body: 'You can update your profile, control whether your department and level appear publicly, leave groups, and choose what you post. If you want assistance with account or content removal, contact an administrator. Some information may need to be retained for safety, abuse prevention, or legal reasons.',
+    body: 'You can update your profile, control whether your course of discipline and level appear publicly, leave groups, and choose what you post. If you want assistance with account or content removal, contact an administrator. Some information may need to be retained for safety, abuse prevention, or legal reasons.',
   },
   {
     title: 'Policy Updates',

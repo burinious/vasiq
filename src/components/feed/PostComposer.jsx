@@ -1,8 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
-import { Film, ImagePlus, SendHorizontal } from 'lucide-react';
+import { Film, ImagePlus, SendHorizontal, X } from 'lucide-react';
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Chip,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { uploadImage } from '../../firebase/cloudinary';
 import { POST_CATEGORIES, SIGNAL_LEVELS } from '../../lib/campusSignal';
 import { getUserDisplayName, getUserFirstName } from '../../utils/userIdentity';
+import { glassCardSx, softInputSx } from '../../styles/premiumTheme';
 import GifPicker from './GifPicker';
 
 function PostComposer({ onSubmit, busy, profile }) {
@@ -105,67 +121,110 @@ function PostComposer({ onSubmit, busy, profile }) {
   };
 
   return (
-    <section className="panel composer-panel social-composer-panel feed-composer-clean">
-      <form onSubmit={handleSubmit} className="composer-form composer-form-shell">
-        <div className="composer-topline">
-          <div className="avatar avatar-sm composer-avatar">
-            {profile?.avatarUrl ? (
-              <img src={profile.avatarUrl} alt={publicName} />
-            ) : (
-              <span>{publicName[0]?.toUpperCase() || 'Y'}</span>
-            )}
-          </div>
-          <div className="composer-identity">
-            <strong>{publicName}</strong>
-            <span>Drop classes, materials, sapa tips, opportunities, or campus gist.</span>
-          </div>
-          <span className="composer-audience-pill">Campus pulse</span>
-        </div>
+    <Box component="section" sx={{ display: 'grid', gap: 2, width: '100%', minWidth: 0 }}>
+      <Box component="form" onSubmit={handleSubmit} sx={{ minWidth: 0 }}>
+        <Stack spacing={{ xs: 1.55, md: 2.2 }} sx={{ minWidth: 0 }}>
+          <Stack direction="row" spacing={{ xs: 1.2, sm: 1.7 }} alignItems="center" sx={{ minWidth: 0 }}>
+            <Avatar
+              src={profile?.avatarUrl || ''}
+              alt={publicName}
+              sx={{
+                width: { xs: 42, sm: 48 },
+                height: { xs: 42, sm: 48 },
+                bgcolor: 'rgba(15,118,110,0.12)',
+                color: '#0f766e',
+                fontWeight: 950,
+              }}
+            >
+              {publicName[0]?.toUpperCase() || 'Y'}
+            </Avatar>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography sx={{ fontWeight: 950, color: '#0f172a' }}>{publicName}</Typography>
+              <Typography noWrap variant="body2" sx={{ color: '#64748b' }}>
+                Drop classes, materials, sapa tips, opportunities, or campus gist.
+              </Typography>
+            </Box>
+            <Chip
+              label="Campus pulse"
+              sx={{
+                display: { xs: 'none', sm: 'inline-flex' },
+                borderRadius: 999,
+                fontWeight: 900,
+              }}
+            />
+          </Stack>
 
-        <div className="composer-main">
-          <div className="composer-signal-grid">
-            <div className="composer-signal-field">
-              <span className="composer-signal-label">Update type</span>
-              <div className="composer-category-row" role="list" aria-label="Post category">
-                {POST_CATEGORIES.map((item) => (
-                  <button
-                    key={item.value}
-                    type="button"
-                    role="listitem"
-                    className={`composer-category-chip ${
-                      category === item.value ? 'composer-category-chip-active' : ''
-                    }`}
-                    onClick={() => setCategory(item.value)}
-                    title={item.description}
-                  >
-                    {item.shortLabel}
-                  </button>
-                ))}
-              </div>
-            </div>
+          <Stack
+            direction="row"
+            spacing={0.8}
+            flexWrap={{ xs: 'nowrap', sm: 'wrap' }}
+            useFlexGap
+            sx={{
+              pt: 0.2,
+              minWidth: 0,
+              overflowX: { xs: 'auto', sm: 'visible' },
+              pb: { xs: 0.4, sm: 0 },
+              scrollbarWidth: 'none',
+              '&::-webkit-scrollbar': { display: 'none' },
+            }}
+          >
+            {POST_CATEGORIES.map((item) => (
+              <Chip
+                key={item.value}
+                label={item.shortLabel}
+                size="small"
+                clickable
+                title={item.description}
+                onClick={() => setCategory(item.value)}
+                color={category === item.value ? 'primary' : 'default'}
+                variant={category === item.value ? 'filled' : 'outlined'}
+                sx={{ borderRadius: 999, fontWeight: 900, flex: '0 0 auto' }}
+              />
+            ))}
+          </Stack>
 
-            <label className="composer-signal-field">
-              <span className="composer-signal-label">Signal level</span>
-              <select
-                className="input composer-select"
-                value={signalLevel}
-                onChange={(event) => setSignalLevel(event.target.value)}
-              >
-                {SIGNAL_LEVELS.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <FormControl
+            fullWidth
+            sx={{
+              ...softInputSx,
+              width: { xs: '100%', sm: 280 },
+              maxWidth: '100%',
+            }}
+          >
+            <InputLabel id="composer-signal-label">Signal level</InputLabel>
+            <Select
+              labelId="composer-signal-label"
+              label="Signal level"
+              value={signalLevel}
+              onChange={(event) => setSignalLevel(event.target.value)}
+            >
+              {SIGNAL_LEVELS.map((item) => (
+                <MenuItem key={item.value} value={item.value}>
+                  {item.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-          <textarea
-            className="input textarea composer-textarea"
+          <TextField
             value={content}
             onChange={(event) => setContent(event.target.value)}
             placeholder={`What's the update, ${firstName}? Keep it short and useful.`}
-            rows={4}
+            multiline
+            minRows={3}
+            sx={{
+              ...softInputSx,
+              minWidth: 0,
+              '& .MuiOutlinedInput-root': {
+                ...softInputSx['& .MuiOutlinedInput-root'],
+                alignItems: 'flex-start',
+                borderRadius: { xs: 2.5, sm: 3 },
+                '& textarea': {
+                  py: 0.6,
+                  fontSize: { xs: '0.92rem', sm: '1rem' },
+                },
+              },
+            }}
           />
 
           <input
@@ -178,78 +237,95 @@ function PostComposer({ onSubmit, busy, profile }) {
             aria-hidden="true"
           />
 
-          <div className="composer-toolbar composer-toolbar-clean">
-            <button
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Button
               type="button"
-              className="composer-tool composer-tool-upload"
+              variant="outlined"
               onClick={openFilePicker}
+              startIcon={<ImagePlus size={16} strokeWidth={2.2} />}
+              sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900 }}
             >
-              <ImagePlus size={15} strokeWidth={2.2} aria-hidden="true" />
-              <span>{file ? 'Change photo' : 'Photo'}</span>
-            </button>
-            <button
+              {file ? 'Change photo' : 'Photo'}
+            </Button>
+            <Button
               type="button"
-              className="composer-tool composer-media-button"
+              variant="outlined"
               onClick={() => setGifPickerOpen(true)}
+              startIcon={<Film size={16} strokeWidth={2.2} />}
+              sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900 }}
             >
-              <Film size={15} strokeWidth={2.2} aria-hidden="true" />
-              <span>{selectedGif ? 'Change GIF' : 'GIF'}</span>
-            </button>
-          </div>
+              {selectedGif ? 'Change GIF' : 'GIF'}
+            </Button>
+            <Button
+              type="submit"
+              variant="outlined"
+              disabled={busy || (!content.trim() && !hasAttachment)}
+              startIcon={<SendHorizontal size={16} strokeWidth={2.2} />}
+              sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900 }}
+            >
+              {busy ? 'Posting...' : 'Share'}
+            </Button>
+          </Stack>
 
           {preview || selectedGif ? (
-            <div className="preview-card composer-attachment-card">
-              <img
+            <Paper
+              elevation={0}
+              sx={{
+                ...glassCardSx,
+                p: 1.5,
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: '150px 1fr auto' },
+                gap: 1.5,
+                alignItems: 'center',
+                boxShadow: '0 14px 38px rgba(15,23,42,0.08)',
+              }}
+            >
+              <Box
+                component="img"
                 src={selectedGif?.gifUrl || preview}
                 alt={selectedGif?.title || 'Post preview'}
-                className="preview-image composer-attachment-preview"
+                sx={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 3 }}
               />
-              <div className="composer-attachment-copy">
-                <span className="file-pill">
-                  <ImagePlus size={14} strokeWidth={2.2} aria-hidden="true" />
-                  <span>{selectedGif ? 'Klipy GIF attached' : 'Photo attached'}</span>
-                </span>
-                <strong>
+              <Box>
+                <Chip
+                  size="small"
+                  icon={<ImagePlus size={14} strokeWidth={2.2} />}
+                  label={selectedGif ? 'Klipy GIF attached' : 'Photo attached'}
+                  sx={{ borderRadius: 999, fontWeight: 900, mb: 1 }}
+                />
+                <Typography sx={{ fontWeight: 950, color: '#0f172a' }}>
                   {file
                     ? file.name
                     : selectedGif
                       ? selectedGif.title || 'Selected GIF'
                       : 'Attachment ready'}
-                </strong>
-                <p className="helper-text">
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#64748b' }}>
                   This visual will publish with your update for the campus feed.
-                </p>
-              </div>
-              <button
+                </Typography>
+              </Box>
+              <Button
                 type="button"
-                className="preview-clear-button"
+                color="error"
+                variant="outlined"
                 onClick={() => {
                   resetComposer(preview);
                 }}
+                startIcon={<X size={15} strokeWidth={2.2} />}
+                sx={{ borderRadius: 999, textTransform: 'none', fontWeight: 900 }}
               >
                 Remove
-              </button>
-            </div>
+              </Button>
+            </Paper>
           ) : null}
 
-          {error ? <p className="error-text">{error}</p> : null}
+          {error ? <Alert severity="error" sx={{ borderRadius: 3 }}>{error}</Alert> : null}
 
-          <div className="form-actions composer-actions">
-            <div className="composer-hint">
-              <span className="composer-dot" />
-              <span>Low data friendly: text first, media only when it adds value.</span>
-            </div>
-            <button
-              type="submit"
-              className="primary-button composer-submit-button"
-              disabled={busy || (!content.trim() && !hasAttachment)}
-            >
-              <SendHorizontal size={15} strokeWidth={2.2} aria-hidden="true" />
-              <span>{busy ? 'Posting...' : 'Share'}</span>
-            </button>
-          </div>
-        </div>
-      </form>
+          <Typography variant="body2" sx={{ color: '#64748b', display: { xs: 'none', sm: 'block' } }}>
+            Low data friendly: text first, media only when it adds value.
+          </Typography>
+        </Stack>
+      </Box>
       <GifPicker
         open={gifPickerOpen}
         onClose={() => setGifPickerOpen(false)}
@@ -265,7 +341,7 @@ function PostComposer({ onSubmit, busy, profile }) {
           setSelectedGif(gif);
         }}
       />
-    </section>
+    </Box>
   );
 }
 
